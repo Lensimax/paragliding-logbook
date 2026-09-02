@@ -33,4 +33,13 @@ describe('AltitudeProfile', () => {
 
     unmount()
   })
+
+  it('falls back to a distance-based x-axis when the track has no timestamps', () => {
+    const untimedPoints: TrackPoint[] = points.map((p) => ({ ...p, time: null }))
+    const { container, unmount } = render(<AltitudeProfile points={untimedPoints} groundElevationM={null} />)
+
+    expect(container.querySelector('canvas')).not.toBeNull()
+
+    unmount()
+  })
 })

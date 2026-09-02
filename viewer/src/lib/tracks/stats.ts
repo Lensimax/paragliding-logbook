@@ -14,6 +14,15 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a))
 }
 
+/** Running distance (km) up to and including each point - used as the profile's x-axis when a track has no timestamps. */
+export function cumulativeDistanceKm(points: { lat: number; lon: number }[]): number[] {
+  const distances = [0]
+  for (let i = 1; i < points.length; i++) {
+    distances.push(distances[i - 1] + haversineKm(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon))
+  }
+  return distances
+}
+
 /** Sum of positive altitude deltas between consecutive fixes. */
 function totalGain(altitudes: number[]): number {
   let gain = 0
@@ -37,10 +46,8 @@ export function computeTrackStats(track: ParsedTrack): TrackStats {
 
   const first = points[0]
 
-  let distanceKm = 0
-  for (let i = 1; i < points.length; i++) {
-    distanceKm += haversineKm(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon)
-  }
+  const distances = cumulativeDistanceKm(points)
+  const distanceKm = distances[distances.length - 1]
 
   // Pressure altitude for gain, per SPEC.md: "Use pressure altitude for gain and climb rate."
   const altitudes = points.map((p) => p.baroElevation).filter((a): a is number => a !== null)

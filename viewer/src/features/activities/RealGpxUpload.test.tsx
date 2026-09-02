@@ -125,7 +125,7 @@ describe('uploading a real-world GPX export with no timestamps', () => {
     expect(screen.getByLabelText('End datetime')).toHaveValue('')
   })
 
-  it('still renders the map for a track with no timestamps, with the profile showing an explanatory message', async () => {
+  it('still renders the map and a distance-based altitude profile for a track with no timestamps', async () => {
     installFakeBackend()
     const user = userEvent.setup()
     render(<App />)
@@ -146,7 +146,8 @@ describe('uploading a real-world GPX export with no timestamps', () => {
 
     // Map only needs lat/lon, so it renders even without timestamps to drive the shared cursor.
     await waitFor(() => expect(document.querySelector('.flight-map.leaflet-container')).not.toBeNull())
-    // The altitude profile's x-axis is time-based, so it falls back to an explanatory message.
-    expect(await screen.findByText('This track has no timestamps to plot.')).toBeInTheDocument()
+    // The profile falls back to a distance-based x-axis instead of an empty state.
+    await waitFor(() => expect(document.querySelector('.altitude-profile-chart canvas')).not.toBeNull())
+    expect(document.querySelector('.altitude-profile-empty')).toBeNull()
   })
 })

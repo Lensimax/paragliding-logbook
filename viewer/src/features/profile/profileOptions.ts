@@ -1,6 +1,6 @@
 import type uPlot from 'uplot'
 
-function formatOffset(seconds: number): string {
+export function formatOffset(seconds: number): string {
   const sign = seconds < 0 ? '-' : ''
   const abs = Math.abs(seconds)
   const minutes = Math.floor(abs / 60)
@@ -8,7 +8,16 @@ function formatOffset(seconds: number): string {
   return `${sign}${minutes}:${secs.toString().padStart(2, '0')}`
 }
 
-export function buildProfileOptions(width: number, height: number, hasGround: boolean): uPlot.Options {
+export function formatDistanceKm(km: number): string {
+  return `${km.toFixed(1)} km`
+}
+
+interface XAxis {
+  label: string
+  format: (value: number) => string
+}
+
+export function buildProfileOptions(width: number, height: number, hasGround: boolean, xAxis: XAxis): uPlot.Options {
   const series: uPlot.Series[] = [
     {},
     { label: 'Altitude', stroke: '#e2431e', width: 2, fill: 'rgba(226, 67, 30, 0.15)' },
@@ -22,7 +31,7 @@ export function buildProfileOptions(width: number, height: number, hasGround: bo
     height,
     scales: { x: { time: false } },
     axes: [
-      { label: 'Time since start', values: (_u, values) => values.map(formatOffset) },
+      { label: xAxis.label, values: (_u, values) => values.map(xAxis.format) },
       { label: 'Altitude (m)' },
     ],
     series,

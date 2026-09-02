@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import uPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { useSharedCursor } from '../../hooks/useSharedCursor'
 import { formatDateTime } from '../../lib/format/datetime'
-import { buildProfileOptions } from './profileOptions'
+import { cumulativeDistanceKm } from '../../lib/tracks/stats'
+import { buildProfileOptions, formatDistanceKm, formatOffset } from './profileOptions'
 import type { TrackPoint } from '../../lib/tracks/types'
 import './profile.css'
 
@@ -18,9 +19,15 @@ export function AltitudeProfile({ points, groundElevationM }: AltitudeProfilePro
   const containerRef = useRef<HTMLDivElement>(null)
   const plotRef = useRef<uPlot | null>(null)
   const { timeOffsetSeconds, setTimeOffsetSeconds } = useSharedCursor()
+  // Some real-world GPX exports omit <time> entirely. The shared cursor is a time offset, which
+  // that domain can't produce, so those tracks fall back to a distance-based x-axis with a
+  // purely local cursor (no sync with the map's hover, which skips the same tracks for the
+  // same reason - see FlightMap's timedPoints guard).
+  const hasTime = points.length > 0 && points.every((p) => p.time !== null)
+  const [localCursorIndex, setLocalCursorIndex] = useState<number | null>(null)
 
-  const startMs = points.length > 0 ? new Date(points[0].time!).getTime() : 0
-  const timeOffsets = points.map((p) => (new Date(p.time!).getTime() - startMs) / 1000)
+  const startMs = hasTime ? new Date(points[0].time!).getTime() : 0
+  const xValues = hasTime ? points.map((p) => (new Date(p.time!).getTime() - startMs) / 1000) : cumulativeDistanceKm(points)
   const altitudes = points.map((p) => p.baroElevation ?? NaN)
 
   useEffect(() => {
@@ -28,15 +35,22 @@ export function AltitudeProfile({ points, groundElevationM }: AltitudeProfilePro
     if (!container) return
 
     const data: uPlot.AlignedData = groundElevationM
-      ? [timeOffsets, altitudes, groundElevationM.map((v) => v ?? NaN)]
-      : [timeOffsets, altitudes]
+      ? [xValues, altitudes, groundElevationM.map((v) => v ?? NaN)]
+      : [xValues, altitudes]
 
-    const options = buildProfileOptions(container.clientWidth, PROFILE_HEIGHT, groundElevationM !== null)
+    const xAxis = hasTime
+      ? { label: 'Time since start', format: formatOffset }
+      : { label: 'Distance (km)', format: formatDistanceKm }
+    const options = buildProfileOptions(container.clientWidth, PROFILE_HEIGHT, groundElevationM !== null, xAxis)
     options.hooks = {
       setCursor: [
         (u) => {
-          const idx = u.cursor.idx
-          setTimeOffsetSeconds(idx == null ? null : (u.data[0][idx] as number))
+          const idx = u.cursor.idx ?? null
+          if (hasTime) {
+            setTimeOffsetSeconds(idx == null ? null : (u.data[0][idx] as number))
+          } else {
+            setLocalCursorIndex(idx)
+          }
         },
       ],
     }
@@ -55,25 +69,31 @@ export function AltitudeProfile({ points, groundElevationM }: AltitudeProfilePro
       plotRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, groundElevationM])
+  }, [points, groundElevationM, hasTime])
 
   // Reflect an externally-set cursor (e.g. hovering the map) onto this chart's own crosshair.
   useEffect(() => {
     const plot = plotRef.current
-    if (!plot || timeOffsetSeconds === null) return
+    if (!plot || !hasTime || timeOffsetSeconds === null) return
     const left = plot.valToPos(timeOffsetSeconds, 'x')
     plot.setCursor({ left, top: -1 })
-  }, [timeOffsetSeconds])
+  }, [timeOffsetSeconds, hasTime])
 
-  const cursorIndex = nearestIndex(timeOffsets, timeOffsetSeconds)
+  const cursorIndex = hasTime ? nearestIndex(xValues, timeOffsetSeconds) : localCursorIndex
 
   return (
     <div className="altitude-profile">
       <div ref={containerRef} className="altitude-profile-chart" />
       {cursorIndex !== null && (
         <div className="altitude-profile-readout">
-          <span>{formatReadoutOffset(timeOffsets[cursorIndex])}</span>
-          <span>{formatDateTime(points[cursorIndex].time!)}</span>
+          {hasTime ? (
+            <>
+              <span>{formatReadoutOffset(xValues[cursorIndex])}</span>
+              <span>{formatDateTime(points[cursorIndex].time!)}</span>
+            </>
+          ) : (
+            <span>{formatDistanceKm(xValues[cursorIndex])}</span>
+          )}
           <span>{altitudes[cursorIndex] != null && !Number.isNaN(altitudes[cursorIndex]) ? `${Math.round(altitudes[cursorIndex])} m` : '—'}</span>
           {groundElevationM && (
             <span>
