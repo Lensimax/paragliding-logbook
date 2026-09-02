@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: paraglog
+          POSTGRES_USER: paraglog
+          POSTGRES_PASSWORD: paraglog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U paraglog"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore ParagLog.sln
+        working-directory: backend
+
+      - name: Build
+        run: dotnet build ParagLog.sln --no-restore --configuration Release
+        working-directory: backend
+
+      - name: Test
+        run: dotnet test ParagLog.sln --no-build --configuration Release
+        working-directory: backend
+        env:
+          ConnectionStrings__Default: "Host=localhost;Database=paraglog;Username=paraglog;Password=paraglog"
+
+  viewer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: viewer/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: viewer
+
+      - name: Build
+        run: npm run build
+        working-directory: viewer
+
+      - name: Test
+        run: npm run test
+        working-directory: viewer

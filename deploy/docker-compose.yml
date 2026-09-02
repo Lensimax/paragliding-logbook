@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: paraglog
+      POSTGRES_USER: paraglog
+      POSTGRES_PASSWORD: paraglog
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paraglog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: src/ParagLog.Api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=db;Database=paraglog;Username=paraglog;Password=paraglog"
+    volumes:
+      - blobs:/data/blobs
+    ports:
+      - "8080:8080"
+
+  viewer:
+    build:
+      context: ../viewer
+    ports:
+      - "8081:80"
+
+volumes:
+  pgdata:
+  blobs:
