@@ -54,12 +54,15 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
       const stats = computeTrackStats(track)
 
       setName(file.name.replace(/\.(gpx|igc)$/i, ''))
-      setStartedAtLocal(toDatetimeLocalValue(stats.startedAt))
-      setEndedAtLocal(toDatetimeLocalValue(stats.endedAt))
+      if (stats.startedAt) setStartedAtLocal(toDatetimeLocalValue(stats.startedAt))
+      if (stats.endedAt) setEndedAtLocal(toDatetimeLocalValue(stats.endedAt))
+
+      const durationPart = stats.durationSeconds !== null ? `${formatDuration(stats.durationSeconds)}, ` : ''
+      const noTimesNote = stats.startedAt === null ? ' (no timestamps in file — set start/end manually)' : ''
       setTrackSummary(
-        `Parsed ${track.points.length} points — ${formatDuration(stats.durationSeconds)}, ` +
-          `${stats.distanceKm} km` +
-          (stats.altitudeGainM !== null ? `, ${stats.altitudeGainM} m gain` : ''),
+        `Parsed ${track.points.length} points — ${durationPart}${stats.distanceKm} km` +
+          (stats.altitudeGainM !== null ? `, ${stats.altitudeGainM} m gain` : '') +
+          noTimesNote,
       )
     } catch (error) {
       setTrackError(error instanceof Error ? error.message : 'Could not parse this file.')

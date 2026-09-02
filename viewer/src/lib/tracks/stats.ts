@@ -24,7 +24,11 @@ function totalGain(altitudes: number[]): number {
   return gain
 }
 
-/** Pure aggregation: ParsedTrack in, TrackStats out. Never assumes a fixed sample interval. */
+/**
+ * Pure aggregation: ParsedTrack in, TrackStats out. Never assumes a fixed sample interval.
+ * Distance and altitude stats don't need timestamps, so they're always computed; duration is
+ * null when no point in the track carries a timestamp (some real-world GPX exports omit it).
+ */
 export function computeTrackStats(track: ParsedTrack): TrackStats {
   const { points } = track
   if (points.length === 0) {
@@ -32,7 +36,6 @@ export function computeTrackStats(track: ParsedTrack): TrackStats {
   }
 
   const first = points[0]
-  const last = points[points.length - 1]
 
   let distanceKm = 0
   for (let i = 1; i < points.length; i++) {
@@ -42,13 +45,18 @@ export function computeTrackStats(track: ParsedTrack): TrackStats {
   // Pressure altitude for gain, per SPEC.md: "Use pressure altitude for gain and climb rate."
   const altitudes = points.map((p) => p.baroElevation).filter((a): a is number => a !== null)
 
+  const timedPoints = points.filter((p) => p.time !== null)
+  const hasTimes = timedPoints.length > 0
+  const startedAt = hasTimes ? timedPoints[0].time : null
+  const endedAt = hasTimes ? timedPoints[timedPoints.length - 1].time : null
+
   return {
-    startedAt: first.time,
-    endedAt: last.time,
-    durationSeconds: Math.max(
-      0,
-      Math.round((new Date(last.time).getTime() - new Date(first.time).getTime()) / 1000),
-    ),
+    startedAt,
+    endedAt,
+    durationSeconds:
+      startedAt !== null && endedAt !== null
+        ? Math.max(0, Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000))
+        : null,
     maxAltitudeM: altitudes.length > 0 ? Math.round(Math.max(...altitudes)) : null,
     altitudeGainM: altitudes.length > 0 ? Math.round(totalGain(altitudes)) : null,
     distanceKm: Math.round(distanceKm * 100) / 100,

@@ -41,16 +41,32 @@ describe('parseGpx', () => {
     expect(() => parseGpx('<gpx><trk><trkseg>')).toThrow(/parse/i)
   })
 
-  it('rejects a GPX file with no track points', () => {
+  it('rejects a GPX file with no track or route points', () => {
     const empty = '<?xml version="1.0"?><gpx version="1.1"><trk><trkseg></trkseg></trk></gpx>'
-    expect(() => parseGpx(empty)).toThrow(/no track points/i)
+    expect(() => parseGpx(empty)).toThrow(/no track or route points/i)
   })
 
-  it('rejects a track point missing a timestamp', () => {
+  it('treats a missing timestamp as a null time rather than a parse error', () => {
     const noTime =
       '<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>' +
       '<trkpt lat="45.86" lon="6.29"><ele>1000</ele></trkpt>' +
       '</trkseg></trk></gpx>'
-    expect(() => parseGpx(noTime)).toThrow(/timestamp/i)
+    const track = parseGpx(noTime)
+
+    expect(track.points[0].time).toBeNull()
+    expect(track.points[0].gpsElevation).toBe(1000)
+  })
+
+  it('falls back to route points when there is no track segment', () => {
+    const routeOnly =
+      '<?xml version="1.0"?><gpx version="1.1"><rte>' +
+      '<rtept lat="45.094578" lon="5.579108"><ele>1035.2</ele></rtept>' +
+      '<rtept lat="45.09614" lon="5.58381"><ele>1080.0</ele></rtept>' +
+      '</rte></gpx>'
+    const track = parseGpx(routeOnly)
+
+    expect(track.points).toHaveLength(2)
+    expect(track.points[0].lat).toBe(45.094578)
+    expect(track.points[0].time).toBeNull()
   })
 })

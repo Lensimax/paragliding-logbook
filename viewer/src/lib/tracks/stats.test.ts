@@ -54,4 +54,20 @@ describe('computeTrackStats', () => {
     expect(stats.maxAltitudeM).toBeNull()
     expect(stats.altitudeGainM).toBeNull()
   })
+
+  it('reports null duration when no fix has a timestamp, but still computes distance', () => {
+    const track = {
+      points: [
+        { lat: 45.86, lon: 6.29, time: null, gpsElevation: 1000, baroElevation: 1000 },
+        { lat: 45.87, lon: 6.3, time: null, gpsElevation: 1100, baroElevation: 1100 },
+      ],
+    }
+    const stats = computeTrackStats(track)
+
+    expect(stats.startedAt).toBeNull()
+    expect(stats.endedAt).toBeNull()
+    expect(stats.durationSeconds).toBeNull()
+    expect(stats.maxAltitudeM).toBe(1100)
+    expect(stats.distanceKm).toBeGreaterThan(0)
+  })
 })
