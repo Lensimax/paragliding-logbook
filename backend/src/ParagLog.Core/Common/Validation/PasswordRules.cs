@@ -4,7 +4,7 @@ namespace ParagLog.Core.Common.Validation;
 
 public static class PasswordRules
 {
-    public const int MinLength = 12;
+    public const int MinLength = 8;
 
     private static readonly Lazy<HashSet<string>> CommonPasswords = new(LoadCommonPasswords);
 

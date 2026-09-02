@@ -14,7 +14,7 @@
 
 .ui-button-primary {
   background: var(--accent);
-  color: var(--accent-bg);
+  color: var(--accent-text);
   border-color: transparent;
 }
 

@@ -36,7 +36,7 @@
     border-radius: 6px;
     border: none;
     background: var(--accent);
-    color: var(--accent-bg);
+    color: var(--accent-text);
     cursor: pointer;
 
     &:disabled {
