@@ -11,4 +11,4 @@ Tracks the steps in `plans/ARCHITECTURE.md` § Development milestones. Check a s
 - [x] **Step 7 — Track parsing (client only).** `lib/tracks` with GPX and IGC parsers, stats and simplification, covered by Vitest against real sample files. Auto-fill in the create form. Nothing uploaded yet.
 - [x] **Step 8 — Track upload and map.** Blob store, upload and download endpoints, delete ordering, `FlightMap` with base layers and track rendering, fit-to-bounds. → tag `v0.4.0`
 - [x] **Step 9 — Altitude profile.** uPlot integration, shared cursor with the map, empty-profile variant, elevation service and `elevation.json` caching. → tag `v0.5.0`
-- [ ] **Step 10 — Export and hardening.** Streamed ZIP export, orphan sweeper, rate limiting on auth endpoints, structured logging, health checks, Caddy config. → tag `v1.0.0`
+- [x] **Step 10 — Export and hardening.** Streamed ZIP export, orphan sweeper, rate limiting on auth endpoints, structured logging, health checks, Caddy config. → tag `v1.0.0`

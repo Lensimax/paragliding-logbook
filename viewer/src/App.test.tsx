@@ -31,6 +31,9 @@ function mockFetch(loggedIn: boolean) {
       if (url.includes('/api/equipment')) {
         return jsonResponse([])
       }
+      if (url.includes('/api/export')) {
+        return { ok: true, status: 200, blob: async () => new Blob(['zip bytes']) }
+      }
       return jsonResponse({}, 404)
     }),
   )
@@ -69,5 +72,19 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: /back/i }))
     expect(await screen.findByRole('heading', { name: 'User Settings' })).toBeInTheDocument()
+  })
+
+  it('downloads the export zip from user settings', async () => {
+    mockFetch(true)
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:mock'), revokeObjectURL: vi.fn() })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await screen.findByText(/no activities yet/i)
+    await user.click(screen.getByRole('button', { name: /open user settings/i }))
+    await user.click(screen.getByRole('button', { name: /export logbook/i }))
+
+    expect(await screen.findByRole('button', { name: /export logbook/i })).toBeInTheDocument()
+    expect(URL.createObjectURL).toHaveBeenCalled()
   })
 })

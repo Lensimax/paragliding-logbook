@@ -1,9 +1,11 @@
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ParagLog.Core.Abstractions;
 using ParagLog.Core.Activities;
 using ParagLog.Core.Equipment;
+using ParagLog.Core.Export;
 using ParagLog.Core.Users;
 using ParagLog.Infrastructure.Elevation;
 using ParagLog.Infrastructure.Persistence;
@@ -58,6 +60,12 @@ public static class DependencyInjection
 
         services.AddScoped<ActivityService>();
         services.AddScoped<EquipmentService>();
+        services.AddScoped<ExportService>();
+
+        services.AddHostedService(sp => new OrphanSweeper(
+            sp.GetRequiredService<NpgsqlConnectionFactory>(),
+            blobsRoot,
+            sp.GetRequiredService<ILogger<OrphanSweeper>>()));
 
         return services;
     }

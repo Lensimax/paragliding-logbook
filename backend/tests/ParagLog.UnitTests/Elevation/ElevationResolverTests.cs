@@ -112,6 +112,9 @@ public class ElevationResolverTests
         public Task<ActivityPage> ListAsync(Guid userId, ActivityListQuery query, CancellationToken ct) =>
             throw new NotSupportedException();
 
+        public Task<IReadOnlyList<Core.Export.ActivityExportRow>> ListAllForExportAsync(Guid userId, CancellationToken ct) =>
+            throw new NotSupportedException();
+
         public Task<Activity> CreateAsync(Guid userId, CreateActivityCommand command, CancellationToken ct) =>
             throw new NotSupportedException();
 

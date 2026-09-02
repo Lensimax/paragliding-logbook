@@ -12,7 +12,7 @@ RUN dotnet publish src/ParagLog.Api/ParagLog.Api.csproj -c Release -o /app --no-
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 curl \
     && rm -rf /var/lib/apt/lists/*
 # Pre-create the blobs mount point owned by the non-root "app" user: an empty named volume
 # mounted here at runtime inherits this directory's ownership, otherwise it stays root-owned.

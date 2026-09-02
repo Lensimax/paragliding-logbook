@@ -28,12 +28,29 @@ services:
       - blobs:/data/blobs
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   viewer:
     build:
       context: ../viewer
     ports:
       - "8081:80"
+
+  proxy:
+    image: caddy:alpine
+    depends_on:
+      backend:
+        condition: service_healthy
+      viewer:
+        condition: service_started
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "80:80"
 
 volumes:
   pgdata:

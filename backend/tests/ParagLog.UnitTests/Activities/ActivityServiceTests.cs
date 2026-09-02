@@ -2,6 +2,7 @@ using ParagLog.Core.Abstractions;
 using ParagLog.Core.Activities;
 using ParagLog.Core.Common;
 using ParagLog.Core.Equipment;
+using ParagLog.Core.Export;
 
 namespace ParagLog.UnitTests.Activities;
 
@@ -230,6 +231,9 @@ public class ActivityServiceTests
 
         public Task<ActivityPage> ListAsync(Guid userId, ActivityListQuery query, CancellationToken ct) =>
             Task.FromResult(new ActivityPage([], false));
+
+        public Task<IReadOnlyList<ActivityExportRow>> ListAllForExportAsync(Guid userId, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<ActivityExportRow>>([]);
 
         public Task<Activity> CreateAsync(Guid userId, CreateActivityCommand command, CancellationToken ct) =>
             Task.FromResult(new Activity

@@ -2,6 +2,7 @@ using Dapper;
 using Npgsql;
 using ParagLog.Core.Abstractions;
 using ParagLog.Core.Activities;
+using ParagLog.Core.Export;
 using ParagLog.Infrastructure.Persistence.TypeHandlers;
 
 namespace ParagLog.Infrastructure.Persistence;
@@ -10,6 +11,7 @@ public sealed class ActivityRepository(NpgsqlConnectionFactory connectionFactory
 {
     private static readonly string GetByIdSql = SqlLoader.Load("Activities.GetById");
     private static readonly string ListSql = SqlLoader.Load("Activities.List");
+    private static readonly string ListAllForExportSql = SqlLoader.Load("Activities.ListAllForExport");
     private static readonly string InsertSql = SqlLoader.Load("Activities.Insert");
     private static readonly string UpdateSql = SqlLoader.Load("Activities.Update");
     private static readonly string DeleteSql = SqlLoader.Load("Activities.Delete");
@@ -54,6 +56,15 @@ public sealed class ActivityRepository(NpgsqlConnectionFactory connectionFactory
         var page = hasMore ? rows.Take(query.Limit) : rows;
 
         return new ActivityPage(page.Select(r => r.ToActivity([])).ToList(), hasMore);
+    }
+
+    public async Task<IReadOnlyList<ActivityExportRow>> ListAllForExportAsync(Guid userId, CancellationToken ct)
+    {
+        await using var connection = await connectionFactory.CreateOpenAsync(ct);
+
+        var command = new CommandDefinition(ListAllForExportSql, new { UserId = userId }, cancellationToken: ct);
+        var rows = await connection.QueryAsync<ActivityExportRow_>(command);
+        return rows.Select(r => r.ToExportRow()).ToList();
     }
 
     public async Task<Activity> CreateAsync(Guid userId, CreateActivityCommand command, CancellationToken ct)
@@ -245,6 +256,56 @@ public sealed class ActivityRepository(NpgsqlConnectionFactory connectionFactory
 
     private static int? DurationSeconds(DateTimeOffset startedAt, DateTimeOffset? endedAt) =>
         endedAt is null ? null : (int)(endedAt.Value - startedAt).TotalSeconds;
+
+    /// <summary>Row shape for the export query - same enum-as-text-column caveat as <see cref="ActivityRow"/>.</summary>
+    private sealed class ActivityExportRow_
+    {
+        public Guid Id { get; init; }
+        public string Type { get; init; } = "";
+        public string Name { get; init; } = "";
+        public DateTimeOffset StartedAt { get; init; }
+        public DateTimeOffset? EndedAt { get; init; }
+        public DateOnly LocalDate { get; init; }
+        public string? TakeoffLocation { get; init; }
+        public string? LandingLocation { get; init; }
+        public int? MaxAltitudeM { get; init; }
+        public int? AltitudeGainM { get; init; }
+        public double? DistanceKm { get; init; }
+        public string? TrackFilename { get; init; }
+        public string? TrackFormat { get; init; }
+        public long? TrackSizeBytes { get; init; }
+        public string? TrackSha256 { get; init; }
+        public int? WindSpeedKmh { get; init; }
+        public int? WindDirection { get; init; }
+        public string? Comment { get; init; }
+        public string EquipmentNames { get; init; } = "";
+
+        public ActivityExportRow ToExportRow() => new(
+            Id,
+            PgEnumTypeHandler<ActivityType>.FromLabel(Type),
+            Name,
+            StartedAt,
+            EndedAt,
+            LocalDate,
+            TakeoffLocation,
+            LandingLocation,
+            MaxAltitudeM,
+            AltitudeGainM,
+            DistanceKm,
+            WindSpeedKmh,
+            WindDirection,
+            Comment,
+            EquipmentNames,
+            TrackFilename is null
+                ? null
+                : new TrackReference
+                {
+                    Filename = TrackFilename,
+                    Format = PgEnumTypeHandler<TrackFormat>.FromLabel(TrackFormat!),
+                    SizeBytes = TrackSizeBytes!.Value,
+                    Sha256 = TrackSha256!,
+                });
+    }
 
     /// <summary>
     /// Flat row shape matching the SELECT columns. Enum columns are read as their raw text label
