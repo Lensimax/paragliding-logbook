@@ -36,6 +36,7 @@ public sealed class SessionCookieAuthHandler(
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim("sid", sessionId.ToString()),
+            new Claim("pid", user.PublicId),
         };
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name);

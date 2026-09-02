@@ -96,6 +96,12 @@
   font-size: 16px;
 }
 
+.activity-track-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .activity-form {
   display: flex;
   flex-direction: column;

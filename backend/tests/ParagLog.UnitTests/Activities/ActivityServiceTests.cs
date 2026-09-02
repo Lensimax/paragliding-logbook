@@ -8,18 +8,25 @@ namespace ParagLog.UnitTests.Activities;
 public class ActivityServiceTests
 {
     private static readonly Guid UserId = Guid.NewGuid();
+    private const string UserPublicId = "bob-ab12x";
 
     private static CreateActivityCommand ValidCreateCommand(
         string name = "Evening glide", DateTimeOffset? startedAt = null, DateTimeOffset? endedAt = null,
-        int? windSpeedKmh = null, int? windDirection = null, IReadOnlyList<Guid>? equipmentIds = null) =>
+        int? windSpeedKmh = null, int? windDirection = null, IReadOnlyList<Guid>? equipmentIds = null,
+        ActivityType type = ActivityType.Flight, int? maxAltitudeM = null, int? altitudeGainM = null, double? distanceKm = null) =>
         new(
-            ActivityType.Flight, name, startedAt ?? DateTimeOffset.UtcNow, endedAt,
+            type, name, startedAt ?? DateTimeOffset.UtcNow, endedAt,
             DateOnly.FromDateTime(DateTime.UtcNow), "Europe/Paris", null, null, null,
-            windSpeedKmh, windDirection, equipmentIds ?? []);
+            windSpeedKmh, windDirection, equipmentIds ?? [],
+            MaxAltitudeM: maxAltitudeM, AltitudeGainM: altitudeGainM, DistanceKm: distanceKm);
 
     private static ActivityService CreateService(
-        bool updateReturnsNull = false, bool deleteReturns = true, int ownedEquipmentCount = int.MaxValue) =>
-        new(new FakeActivityRepository(updateReturnsNull, deleteReturns), new FakeEquipmentRepository(ownedEquipmentCount));
+        bool updateReturnsNull = false, bool deleteReturns = true, int ownedEquipmentCount = int.MaxValue,
+        FakeActivityRepository? activityRepository = null, FakeBlobStore? blobStore = null) =>
+        new(
+            activityRepository ?? new FakeActivityRepository(updateReturnsNull, deleteReturns),
+            new FakeEquipmentRepository(ownedEquipmentCount),
+            blobStore ?? new FakeBlobStore());
 
     [Fact]
     public async Task CreateAsync_rejects_blank_name()
@@ -107,6 +114,18 @@ public class ActivityServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_rejects_flight_stats_on_a_ground_handling_activity()
+    {
+        var service = CreateService();
+
+        var result = await service.CreateAsync(
+            UserId, ValidCreateCommand(type: ActivityType.GroundHandling, maxAltitudeM: 1500), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorType.Validation, result.Error!.Type);
+    }
+
+    [Fact]
     public async Task UpdateAsync_returns_not_found_when_the_repository_finds_nothing()
     {
         var service = CreateService(updateReturnsNull: true);
@@ -124,16 +143,90 @@ public class ActivityServiceTests
     {
         var service = CreateService(deleteReturns: false);
 
-        var result = await service.DeleteAsync(UserId, Guid.NewGuid(), CancellationToken.None);
+        var result = await service.DeleteAsync(UserId, UserPublicId, Guid.NewGuid(), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorType.NotFound, result.Error!.Type);
     }
 
-    private sealed class FakeActivityRepository(bool updateReturnsNull, bool deleteReturns) : IActivityRepository
+    [Fact]
+    public async Task DeleteAsync_deletes_the_blob_folder_after_the_row_is_gone()
     {
+        var blobStore = new FakeBlobStore();
+        var service = CreateService(blobStore: blobStore);
+        var activityId = Guid.NewGuid();
+
+        var result = await service.DeleteAsync(UserId, UserPublicId, activityId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal((UserPublicId, activityId), blobStore.DeletedFolder);
+    }
+
+    [Fact]
+    public async Task UploadTrackAsync_rejects_a_ground_handling_activity()
+    {
+        var repository = new FakeActivityRepository(activityType: ActivityType.GroundHandling);
+        var blobStore = new FakeBlobStore();
+        var service = CreateService(activityRepository: repository, blobStore: blobStore);
+
+        var track = new TrackReference { Filename = "track.gpx", Format = TrackFormat.Gpx, SizeBytes = 100, Sha256 = "abc" };
+        var result = await service.UploadTrackAsync(
+            UserId, UserPublicId, Guid.NewGuid(), track, new MemoryStream(), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorType.Validation, result.Error!.Type);
+        Assert.False(blobStore.SaveWasCalled);
+    }
+
+    [Fact]
+    public async Task UploadTrackAsync_saves_the_blob_before_updating_the_row()
+    {
+        var repository = new FakeActivityRepository(activityType: ActivityType.Flight);
+        var blobStore = new FakeBlobStore();
+        var service = CreateService(activityRepository: repository, blobStore: blobStore);
+
+        var track = new TrackReference { Filename = "track.gpx", Format = TrackFormat.Gpx, SizeBytes = 100, Sha256 = "abc" };
+        var result = await service.UploadTrackAsync(
+            UserId, UserPublicId, Guid.NewGuid(), track, new MemoryStream(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(blobStore.SaveWasCalled);
+        Assert.True(repository.SetTrackWasCalled);
+    }
+
+    [Fact]
+    public async Task DeleteTrackAsync_returns_not_found_when_the_activity_has_no_track()
+    {
+        var repository = new FakeActivityRepository(track: null);
+        var service = CreateService(activityRepository: repository);
+
+        var result = await service.DeleteTrackAsync(UserId, UserPublicId, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorType.NotFound, result.Error!.Type);
+    }
+
+    private sealed class FakeActivityRepository(
+        bool updateReturnsNull = false,
+        bool deleteReturns = true,
+        ActivityType activityType = ActivityType.Flight,
+        TrackReference? track = null) : IActivityRepository
+    {
+        public bool SetTrackWasCalled { get; private set; }
+
         public Task<Activity?> FindByIdAsync(Guid userId, Guid activityId, CancellationToken ct) =>
-            Task.FromResult<Activity?>(null);
+            Task.FromResult<Activity?>(new Activity
+            {
+                Id = activityId,
+                UserId = userId,
+                Type = activityType,
+                Name = "Existing",
+                StartedAt = DateTimeOffset.UtcNow,
+                LocalDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Track = track,
+            });
 
         public Task<ActivityPage> ListAsync(Guid userId, ActivityListQuery query, CancellationToken ct) =>
             Task.FromResult(new ActivityPage([], false));
@@ -169,6 +262,47 @@ public class ActivityServiceTests
                 });
 
         public Task<bool> DeleteAsync(Guid userId, Guid activityId, CancellationToken ct) => Task.FromResult(deleteReturns);
+
+        public Task<Activity?> SetTrackAsync(Guid userId, Guid activityId, TrackReference? newTrack, CancellationToken ct)
+        {
+            SetTrackWasCalled = true;
+            return Task.FromResult<Activity?>(new Activity
+            {
+                Id = activityId,
+                UserId = userId,
+                Type = activityType,
+                Name = "Existing",
+                StartedAt = DateTimeOffset.UtcNow,
+                LocalDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Track = newTrack,
+            });
+        }
+    }
+
+    private sealed class FakeBlobStore : IBlobStore
+    {
+        public bool SaveWasCalled { get; private set; }
+        public (string UserPublicId, Guid ActivityId)? DeletedFolder { get; private set; }
+
+        public Task SaveTrackAsync(string userPublicId, Guid activityId, TrackFormat format, Stream content, CancellationToken ct)
+        {
+            SaveWasCalled = true;
+            return Task.CompletedTask;
+        }
+
+        public Task<Stream?> OpenTrackAsync(string userPublicId, Guid activityId, TrackFormat format, CancellationToken ct) =>
+            Task.FromResult<Stream?>(null);
+
+        public Task DeleteTrackAsync(string userPublicId, Guid activityId, TrackFormat format, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public Task DeleteActivityFolderAsync(string userPublicId, Guid activityId, CancellationToken ct)
+        {
+            DeletedFolder = (userPublicId, activityId);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeEquipmentRepository(int ownedCount) : IEquipmentRepository

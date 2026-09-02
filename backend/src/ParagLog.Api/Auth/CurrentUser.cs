@@ -7,6 +7,7 @@ public interface ICurrentUser
     Guid Id { get; }
     Guid SessionId { get; }
     string Username { get; }
+    string PublicId { get; }
 }
 
 public sealed class CurrentUser : ICurrentUser
@@ -14,6 +15,7 @@ public sealed class CurrentUser : ICurrentUser
     public required Guid Id { get; init; }
     public required Guid SessionId { get; init; }
     public required string Username { get; init; }
+    public required string PublicId { get; init; }
 
     public static CurrentUser FromHttpContext(IHttpContextAccessor accessor)
     {
@@ -28,6 +30,8 @@ public sealed class CurrentUser : ICurrentUser
                 ?? throw new InvalidOperationException("Missing session id claim.")),
             Username = user.FindFirstValue(ClaimTypes.Name)
                 ?? throw new InvalidOperationException("Missing username claim."),
+            PublicId = user.FindFirstValue("pid")
+                ?? throw new InvalidOperationException("Missing public id claim."),
         };
     }
 }

@@ -32,3 +32,37 @@ if (!window.matchMedia) {
   }
 }
 
+// jsdom's getContext('2d') logs "Not implemented" and returns null unless the native `canvas`
+// package is installed. Leaflet's preferCanvas renderer needs a working 2D context; stub one out
+// with no-op methods so map rendering doesn't crash under jsdom (nothing here is ever asserted
+// on - the FlightMap tests only check that Leaflet initializes without throwing).
+function createNoopCanvasContext(): CanvasRenderingContext2D {
+  const ctx: Record<string, unknown> = {
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    lineCap: 'butt',
+    lineJoin: 'miter',
+    globalAlpha: 1,
+    font: '',
+  }
+  const methods = [
+    'translate', 'scale', 'rotate', 'save', 'restore', 'clearRect', 'fillRect', 'strokeRect',
+    'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'arcTo', 'bezierCurveTo', 'quadraticCurveTo',
+    'rect', 'fill', 'stroke', 'clip', 'setLineDash', 'getLineDash', 'setTransform', 'resetTransform',
+    'drawImage', 'fillText', 'strokeText', 'createLinearGradient', 'createRadialGradient',
+    'createPattern', 'getImageData', 'putImageData', 'isPointInPath', 'measureText',
+  ]
+  for (const name of methods) {
+    ctx[name] = () =>
+      name === 'measureText' ? { width: 0 } : name === 'isPointInPath' ? false : undefined
+  }
+  return ctx as unknown as CanvasRenderingContext2D
+}
+
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  value: () => createNoopCanvasContext(),
+  writable: true,
+  configurable: true,
+})
+

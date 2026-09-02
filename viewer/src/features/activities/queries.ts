@@ -48,3 +48,14 @@ export function useDeleteActivity() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey }),
   })
 }
+
+export function useUploadTrack(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => activitiesApi.uploadTrack(id, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: activitiesKey })
+      queryClient.invalidateQueries({ queryKey: activityKey(id) })
+    },
+  })
+}

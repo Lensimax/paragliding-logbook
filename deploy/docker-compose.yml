@@ -23,6 +23,7 @@ services:
     environment:
       ConnectionStrings__Default: "Host=db;Database=paraglog;Username=paraglog;Password=paraglog"
       Accounts__PublicIdServerSalt: "paraglog-dev-salt-change-in-production"
+      Storage__BlobsRoot: "/data/blobs"
     volumes:
       - blobs:/data/blobs
     ports:

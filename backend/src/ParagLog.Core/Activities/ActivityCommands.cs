@@ -12,7 +12,14 @@ public sealed record CreateActivityCommand(
     string? Comment,
     int? WindSpeedKmh,
     int? WindDirection,
-    IReadOnlyList<Guid> EquipmentIds
+    IReadOnlyList<Guid> EquipmentIds,
+    // Auto-filled client-side from a parsed track (Step 7); the track file itself is a
+    // separate upload (POST .../track) since the backend never parses tracks.
+    double? TakeoffLat = null,
+    double? TakeoffLon = null,
+    int? MaxAltitudeM = null,
+    int? AltitudeGainM = null,
+    double? DistanceKm = null
 );
 
 public sealed record UpdateActivityCommand(

@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '../../../components/ui/Button'
 import { Field } from '../../../components/ui/Field'
 import { ApiError } from '../../../lib/api/client'
@@ -8,6 +9,8 @@ import type { PanelNav, PanelView } from '../../../lib/panel/types'
 import { parseGpx } from '../../../lib/tracks/parseGpx'
 import { parseIgc } from '../../../lib/tracks/parseIgc'
 import { computeTrackStats } from '../../../lib/tracks/stats'
+import type { TrackStats } from '../../../lib/tracks/types'
+import { activitiesApi } from '../api'
 import { makeActivityDetailView } from './ActivityDetail'
 import { EquipmentPicker } from './EquipmentPicker'
 import { useCreateActivity, useUpdateActivity } from '../queries'
@@ -23,6 +26,7 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
   const isEdit = activity !== undefined
   const createActivity = useCreateActivity()
   const updateActivity = useUpdateActivity(activity?.id ?? '')
+  const queryClient = useQueryClient()
 
   const [type, setType] = useState<ActivityKind>(activity?.type ?? 'flight')
   const [name, setName] = useState(activity?.name ?? '')
@@ -37,6 +41,8 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [trackError, setTrackError] = useState<string | null>(null)
   const [trackSummary, setTrackSummary] = useState<string | null>(null)
+  const [trackFile, setTrackFile] = useState<File | null>(null)
+  const [trackStats, setTrackStats] = useState<TrackStats | null>(null)
 
   const submitting = createActivity.isPending || updateActivity.isPending
 
@@ -46,6 +52,8 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
 
     setTrackError(null)
     setTrackSummary(null)
+    setTrackFile(null)
+    setTrackStats(null)
 
     try {
       const text = await file.text()
@@ -56,6 +64,8 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
       setName(file.name.replace(/\.(gpx|igc)$/i, ''))
       if (stats.startedAt) setStartedAtLocal(toDatetimeLocalValue(stats.startedAt))
       if (stats.endedAt) setEndedAtLocal(toDatetimeLocalValue(stats.endedAt))
+      setTrackFile(file)
+      setTrackStats(stats)
 
       const durationPart = stats.durationSeconds !== null ? `${formatDuration(stats.durationSeconds)}, ` : ''
       const noTimesNote = stats.startedAt === null ? ' (no timestamps in file — set start/end manually)' : ''
@@ -99,6 +109,12 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
       windSpeedKmh: type === 'groundHandling' && windSpeedKmh ? Number(windSpeedKmh) : null,
       windDirection: type === 'groundHandling' && windDirection ? Number(windDirection) : null,
       equipmentIds,
+      // Auto-filled from the parsed track (Step 7); only meaningful for a flight.
+      takeoffLat: type === 'flight' ? (trackStats?.takeoffLat ?? null) : null,
+      takeoffLon: type === 'flight' ? (trackStats?.takeoffLon ?? null) : null,
+      maxAltitudeM: type === 'flight' ? (trackStats?.maxAltitudeM ?? null) : null,
+      altitudeGainM: type === 'flight' ? (trackStats?.altitudeGainM ?? null) : null,
+      distanceKm: type === 'flight' ? (trackStats?.distanceKm ?? null) : null,
     }
 
     try {
@@ -107,6 +123,18 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
         nav.pop()
       } else {
         const created = await createActivity.mutateAsync(payload)
+
+        if (trackFile) {
+          // Two-step flow: the row already exists, so a failed upload just leaves it without a
+          // track rather than losing the metadata - the detail view offers a retry.
+          try {
+            await activitiesApi.uploadTrack(created.id, trackFile)
+            await queryClient.invalidateQueries({ queryKey: ['activities'] })
+          } catch {
+            // Swallowed intentionally: see comment above.
+          }
+        }
+
         nav.replace(makeActivityDetailView(created.id))
       }
     } catch (error) {

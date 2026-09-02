@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { Dropdown } from '../../../components/ui/Dropdown'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { formatDateTime } from '../../../lib/format/datetime'
@@ -6,7 +6,8 @@ import { formatDuration } from '../../../lib/format/duration'
 import type { PanelNav, PanelView } from '../../../lib/panel/types'
 import { makeActivityEditView } from './ActivityForm'
 import { DeleteActivityDialog } from './DeleteActivityDialog'
-import { useActivity } from '../queries'
+import { useActivity, useUploadTrack } from '../queries'
+import { useSelectedActivity } from '../useSelectedActivity'
 import { useEquipmentList } from '../../equipment/queries'
 import '../activities.css'
 
@@ -18,7 +19,14 @@ interface ActivityDetailProps {
 export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
   const { data: activity, isLoading, isError } = useActivity(activityId)
   const { data: equipmentList } = useEquipmentList()
+  const uploadTrack = useUploadTrack(activityId)
+  const { setSelectedActivityId } = useSelectedActivity()
   const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    setSelectedActivityId(activityId)
+    return () => setSelectedActivityId(null)
+  }, [activityId, setSelectedActivityId])
 
   if (isLoading) return <p>Loading…</p>
 
@@ -29,6 +37,13 @@ export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
   const equipmentNames = activity.equipmentIds
     .map((id) => equipmentList?.find((item) => item.id === id)?.displayName)
     .filter((name): name is string => Boolean(name))
+
+  async function handleTrackFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    await uploadTrack.mutateAsync(file)
+    event.target.value = ''
+  }
 
   return (
     <div className="activity-detail">
@@ -79,6 +94,27 @@ export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
           </>
         )}
       </dl>
+
+      {activity.type === 'flight' && (
+        <div className="activity-track-section">
+          {activity.track ? (
+            <p className="track-summary">Track: {activity.track.filename}</p>
+          ) : (
+            <>
+              <p className="track-summary">No track uploaded.</p>
+              <input
+                type="file"
+                accept=".gpx,.igc"
+                aria-label="Upload track"
+                onChange={(e) => void handleTrackFileChange(e)}
+                disabled={uploadTrack.isPending}
+              />
+              {uploadTrack.isPending && <p className="track-summary">Uploading…</p>}
+              {uploadTrack.isError && <p className="field-error">Upload failed. Please try again.</p>}
+            </>
+          )}
+        </div>
+      )}
 
       {deleting && (
         <DeleteActivityDialog

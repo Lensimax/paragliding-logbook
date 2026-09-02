@@ -19,15 +19,13 @@ public sealed class Activity
 
     public string? Comment { get; init; }
 
-    // Derived from the track. Null until Step 8 wires track upload/parsing.
+    // Derived client-side from the track and sent as ordinary field values at create time
+    // (the backend never parses tracks itself).
     public int? MaxAltitudeM { get; init; }
     public int? AltitudeGainM { get; init; }
     public double? DistanceKm { get; init; }
 
-    public string? TrackFilename { get; init; }
-    public TrackFormat? TrackFormat { get; init; }
-    public long? TrackSizeBytes { get; init; }
-    public string? TrackSha256 { get; init; }
+    public TrackReference? Track { get; init; }
     public bool HasElevation { get; init; }
 
     public int? WindSpeedKmh { get; init; }

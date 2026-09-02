@@ -1,4 +1,5 @@
 export type ActivityKind = 'flight' | 'groundHandling'
+export type TrackFileFormat = 'gpx' | 'igc'
 
 export interface ActivitySummary {
   id: string
@@ -7,6 +8,13 @@ export interface ActivitySummary {
   startedAt: string
   endedAt: string | null
   durationSeconds: number | null
+}
+
+export interface TrackInfo {
+  filename: string
+  format: TrackFileFormat
+  sizeBytes: number
+  sha256: string
 }
 
 export interface ActivityDetail {
@@ -19,11 +27,16 @@ export interface ActivityDetail {
   localTz: string | null
   takeoffLocation: string | null
   landingLocation: string | null
+  takeoffLat: number | null
+  takeoffLon: number | null
   comment: string | null
+  maxAltitudeM: number | null
+  altitudeGainM: number | null
+  distanceKm: number | null
   windSpeedKmh: number | null
   windDirection: number | null
   durationSeconds: number | null
-  hasTrack: boolean
+  track: TrackInfo | null
   equipmentIds: string[]
 }
 
@@ -45,4 +58,9 @@ export interface ActivityPayload {
   windSpeedKmh: number | null
   windDirection: number | null
   equipmentIds: string[]
+  takeoffLat?: number | null
+  takeoffLon?: number | null
+  maxAltitudeM?: number | null
+  altitudeGainM?: number | null
+  distanceKm?: number | null
 }

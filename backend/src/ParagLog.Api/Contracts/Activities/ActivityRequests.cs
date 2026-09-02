@@ -14,11 +14,17 @@ public sealed record CreateActivityRequest(
     string? Comment,
     int? WindSpeedKmh,
     int? WindDirection,
-    IReadOnlyList<Guid>? EquipmentIds)
+    IReadOnlyList<Guid>? EquipmentIds,
+    double? TakeoffLat = null,
+    double? TakeoffLon = null,
+    int? MaxAltitudeM = null,
+    int? AltitudeGainM = null,
+    double? DistanceKm = null)
 {
     public CreateActivityCommand ToCommand() => new(
         Type, Name, StartedAt, EndedAt, LocalDate, LocalTz, TakeoffLocation, LandingLocation,
-        Comment, WindSpeedKmh, WindDirection, EquipmentIds ?? []);
+        Comment, WindSpeedKmh, WindDirection, EquipmentIds ?? [],
+        TakeoffLat, TakeoffLon, MaxAltitudeM, AltitudeGainM, DistanceKm);
 }
 
 public sealed record UpdateActivityRequest(

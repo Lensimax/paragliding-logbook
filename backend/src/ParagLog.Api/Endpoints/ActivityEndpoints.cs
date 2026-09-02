@@ -56,7 +56,7 @@ public static class ActivityEndpoints
 
     private static async Task<IResult> DeleteAsync(Guid id, ICurrentUser user, ActivityService activities, CancellationToken ct)
     {
-        var result = await activities.DeleteAsync(user.Id, id, ct);
+        var result = await activities.DeleteAsync(user.Id, user.PublicId, id, ct);
         return result.IsSuccess ? Results.NoContent() : result.ToProblem();
     }
 }

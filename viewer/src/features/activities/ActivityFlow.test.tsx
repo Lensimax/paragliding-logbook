@@ -12,6 +12,14 @@ const currentUser = {
   email: 'bob@example.com',
 }
 
+interface StoredTrack {
+  filename: string
+  format: 'gpx' | 'igc'
+  sizeBytes: number
+  sha256: string
+  content: string
+}
+
 interface StoredActivity {
   id: string
   type: string
@@ -26,12 +34,20 @@ interface StoredActivity {
   windSpeedKmh: number | null
   windDirection: number | null
   durationSeconds: number | null
-  hasTrack: boolean
+  track: StoredTrack | null
   equipmentIds: string[]
 }
 
 function jsonResponse(body: unknown, status = 200) {
   return { ok: status < 400, status, json: async () => body }
+}
+
+function toResponseBody(activity: StoredActivity) {
+  const { track, ...rest } = activity
+  return {
+    ...rest,
+    track: track ? { filename: track.filename, format: track.format, sizeBytes: track.sizeBytes, sha256: track.sha256 } : null,
+  }
 }
 
 function installFakeBackend() {
@@ -47,11 +63,41 @@ function installFakeBackend() {
       if (url.includes('/api/me')) return jsonResponse(currentUser)
 
       if (url.includes('/api/activities')) {
-        const idMatch = /\/api\/activities\/([^/?]+)/.exec(url)
+        const trackMatch = /\/api\/activities\/([^/?]+)\/track$/.exec(url)
+        const idMatch = !trackMatch && /\/api\/activities\/([^/?]+)/.exec(url)
+
+        if (trackMatch) {
+          const activity = activities.get(trackMatch[1])
+
+          if (method === 'POST') {
+            if (!activity) return jsonResponse({}, 404)
+            const form = init?.body as FormData
+            const file = form.get('file') as File
+            const content = await file.text()
+            activity.track = {
+              filename: `track.${file.name.toLowerCase().endsWith('.igc') ? 'igc' : 'gpx'}`,
+              format: file.name.toLowerCase().endsWith('.igc') ? 'igc' : 'gpx',
+              sizeBytes: content.length,
+              sha256: 'fake-hash',
+              content,
+            }
+            return jsonResponse(toResponseBody(activity))
+          }
+
+          if (method === 'GET') {
+            if (!activity?.track) return jsonResponse({}, 404)
+            return {
+              ok: true,
+              status: 200,
+              text: async () => activity.track!.content,
+              headers: new Headers({ 'Content-Type': 'application/gpx+xml' }),
+            }
+          }
+        }
 
         if (idMatch && method === 'GET') {
           const activity = activities.get(idMatch[1])
-          return activity ? jsonResponse(activity) : jsonResponse({}, 404)
+          return activity ? jsonResponse(toResponseBody(activity)) : jsonResponse({}, 404)
         }
 
         if (idMatch && method === 'DELETE') {
@@ -76,11 +122,11 @@ function installFakeBackend() {
             windSpeedKmh: body.windSpeedKmh ?? null,
             windDirection: body.windDirection ?? null,
             durationSeconds: null,
-            hasTrack: false,
+            track: null,
             equipmentIds: body.equipmentIds ?? [],
           }
           activities.set(id, created)
-          return jsonResponse(created, 201)
+          return jsonResponse(toResponseBody(created), 201)
         }
 
         if (!idMatch && method === 'GET') {
@@ -182,5 +228,44 @@ describe('activity CRUD flow', () => {
     await user.upload(screen.getByLabelText('Flight file (GPX or IGC)'), file)
 
     expect(await screen.findByText(/could not parse/i)).toBeInTheDocument()
+  })
+
+  it('uploads the track after create (two-step flow) and shows it on the detail view', async () => {
+    installFakeBackend()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await screen.findByText(/no activities yet/i)
+
+    await user.click(screen.getByRole('button', { name: 'Create/import' }))
+    await screen.findByRole('heading', { name: 'Create activity' })
+
+    const file = new File([sampleGpx], 'sample.gpx', { type: 'application/gpx+xml' })
+    await user.upload(screen.getByLabelText('Flight file (GPX or IGC)'), file)
+    await screen.findByText(/parsed 10 points/i)
+
+    await user.click(screen.getByRole('button', { name: 'Create' }))
+
+    expect(await screen.findByText('Track: track.gpx')).toBeInTheDocument()
+  })
+
+  it('offers a retry to upload a track on an activity that has none', async () => {
+    installFakeBackend()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await screen.findByText(/no activities yet/i)
+
+    await user.click(screen.getByRole('button', { name: 'Create/import' }))
+    await user.type(screen.getByLabelText('Name'), 'No track yet')
+    await user.type(screen.getByLabelText('Start datetime'), '2026-03-05T14:30')
+    await user.click(screen.getByRole('button', { name: 'Create' }))
+
+    expect(await screen.findByText(/no track uploaded/i)).toBeInTheDocument()
+
+    const file = new File([sampleGpx], 'retry.gpx', { type: 'application/gpx+xml' })
+    await user.upload(screen.getByLabelText('Upload track'), file)
+
+    expect(await screen.findByText('Track: track.gpx')).toBeInTheDocument()
   })
 })

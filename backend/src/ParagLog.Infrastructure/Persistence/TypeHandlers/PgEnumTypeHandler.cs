@@ -5,7 +5,7 @@ using Dapper;
 namespace ParagLog.Infrastructure.Persistence.TypeHandlers;
 
 /// <summary>
-/// Maps a C# enum (PascalCase) to/from a Postgres enum label (snake_case), e.g.
+/// Converts a C# enum (PascalCase) to/from a Postgres enum label (snake_case), e.g.
 /// <c>GroundHandling</c> &lt;-&gt; <c>ground_handling</c>.
 ///
 /// Npgsql's type resolver has no default CLR mapping for custom Postgres enum types (the same
@@ -13,11 +13,15 @@ namespace ParagLog.Infrastructure.Persistence.TypeHandlers;
 /// the bound text parameter back with <c>@Param::the_pg_enum</c>, since Postgres has no implicit
 /// text-to-enum assignment cast for bound parameters.
 ///
-/// This handler covers reads (<see cref="Parse"/>, used by Dapper's row deserializer). It does
-/// NOT cover writes: Dapper's parameter binder special-cases enums to DbType.Int32 before it ever
-/// consults a registered type handler, so <see cref="SetValue"/> is unreachable in practice.
-/// Repositories must convert enum values to their label with <see cref="ToLabel"/> themselves
-/// before adding them to a parameters object.
+/// Neither <see cref="SetValue"/> nor <see cref="Parse"/> - the SqlMapper.TypeHandler override
+/// points - ever actually runs: Dapper special-cases any enum-typed parameter or POCO property to
+/// go through plain DbType.Int32 / Enum.Parse before it consults a registered handler, for both
+/// writes and reads. That went unnoticed for single-word labels ("flight", "wing"...), which
+/// round-trip through Enum.Parse's case-insensitive name match by coincidence - multi-word labels
+/// like "ground_handling" don't. <see cref="ToLabel"/> and <see cref="FromLabel"/> are the real
+/// mechanism: repositories must read enum columns as plain text into a string row property and
+/// call FromLabel explicitly, and convert enum values with ToLabel before binding them as a
+/// parameter - never bind a C# enum type directly to a Dapper parameter or POCO property.
 /// </summary>
 public sealed class PgEnumTypeHandler<TEnum> : SqlMapper.TypeHandler<TEnum> where TEnum : struct, Enum
 {

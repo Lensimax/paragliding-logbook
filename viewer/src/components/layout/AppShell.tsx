@@ -3,6 +3,7 @@ import { useAuthContext } from '../../features/auth/AuthContext'
 import { settingsRootView } from '../../app/routes'
 import { makeActivityDetailView } from '../../features/activities/components/ActivityDetail'
 import { useActivities } from '../../features/activities/queries'
+import { SelectedActivityProvider } from '../../features/activities/useSelectedActivity'
 import { usePanelStack } from '../../lib/panel/usePanelStack'
 import type { PanelView } from '../../lib/panel/types'
 import { useBreakpoint } from './useBreakpoint'
@@ -54,22 +55,22 @@ export function AppShell({ rootView }: AppShellProps) {
 
   const panel = <LogbookPanel stack={stack} rootHeader={rootHeader} />
 
-  if (isMobile) {
-    return (
-      <div className="app-shell app-shell-mobile">
-        <MapStage />
-        <MobileSheet collapsed={stack.depth > 1}>{panel}</MobileSheet>
-      </div>
-    )
-  }
-
   return (
-    <div className="app-shell app-shell-desktop">
-      <MapStage />
-      <div className="logbook-panel-wrapper" style={{ width }}>
-        <PanelResizer width={width} onResize={setWidth} />
-        {panel}
-      </div>
-    </div>
+    <SelectedActivityProvider>
+      {isMobile ? (
+        <div className="app-shell app-shell-mobile">
+          <MapStage />
+          <MobileSheet collapsed={stack.depth > 1}>{panel}</MobileSheet>
+        </div>
+      ) : (
+        <div className="app-shell app-shell-desktop">
+          <MapStage />
+          <div className="logbook-panel-wrapper" style={{ width }}>
+            <PanelResizer width={width} onResize={setWidth} />
+            {panel}
+          </div>
+        </div>
+      )}
+    </SelectedActivityProvider>
   )
 }

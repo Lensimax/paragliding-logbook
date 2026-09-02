@@ -8,6 +8,7 @@ using ParagLog.Core.Users;
 using ParagLog.Infrastructure.Persistence;
 using ParagLog.Infrastructure.Persistence.TypeHandlers;
 using ParagLog.Infrastructure.Security;
+using ParagLog.Infrastructure.Storage;
 
 namespace ParagLog.Infrastructure;
 
@@ -21,6 +22,9 @@ public static class DependencyInjection
         var publicIdServerSalt = configuration["Accounts:PublicIdServerSalt"]
             ?? throw new InvalidOperationException("Missing Accounts:PublicIdServerSalt configuration.");
 
+        var blobsRoot = configuration["Storage:BlobsRoot"]
+            ?? throw new InvalidOperationException("Missing Storage:BlobsRoot configuration.");
+
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<ActivityType>());
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<TrackFormat>());
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<EquipmentType>());
@@ -33,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IEquipmentRepository, EquipmentRepository>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
+        services.AddSingleton<IBlobStore>(new FileSystemBlobStore(blobsRoot));
 
         services.AddScoped(sp => new UserService(
             sp.GetRequiredService<IUserRepository>(),
