@@ -3,7 +3,7 @@
 Tracks the steps in `plans/ARCHITECTURE.md` § Development milestones. Check a step when its commit lands on `dev` (and note the tag once merged to `main`).
 
 - [x] **Step 1 — Skeleton.** Solution, three projects, Vite app, Docker Compose with PostgreSQL, CI running build and test on both. No features.
-- [ ] **Step 2 — Database and migrations.** `0001_initial_schema.sql` with the full schema. DbUp runner. Integration test using Testcontainers that applies migrations to a fresh database.
+- [x] **Step 2 — Database and migrations.** `0001_initial_schema.sql` with the full schema. DbUp runner. Integration test using Testcontainers that applies migrations to a fresh database.
 - [ ] **Step 3 — Accounts.** Register, login, logout, session cookie, Argon2id, public ID generation with the Windows reserved-name guard. Unit tests for `PublicIdGenerator` and the validation rules. Frontend login and register forms. → tag `v0.1.0`
 - [ ] **Step 4 — App shell.** `AppShell`, `LogbookPanel`, `ViewStack`, resizer with persisted width, mobile breakpoint and bottom sheet. Empty states throughout. No data yet.
 - [ ] **Step 5 — Activities without tracks.** Full CRUD, list with infinite scroll, detail, create/edit forms, delete dialog, auto-select most recent. → tag `v0.2.0`
