@@ -14,6 +14,7 @@ public sealed class ActivityRepository(NpgsqlConnectionFactory connectionFactory
     private static readonly string UpdateSql = SqlLoader.Load("Activities.Update");
     private static readonly string DeleteSql = SqlLoader.Load("Activities.Delete");
     private static readonly string SetTrackSql = SqlLoader.Load("Activities.SetTrack");
+    private static readonly string SetHasElevationSql = SqlLoader.Load("Activities.SetHasElevation");
     private static readonly string EquipmentListByActivitySql = SqlLoader.Load("ActivityEquipment.ListByActivity");
     private static readonly string EquipmentDeleteByActivitySql = SqlLoader.Load("ActivityEquipment.DeleteByActivity");
     private static readonly string EquipmentInsertSql = SqlLoader.Load("ActivityEquipment.Insert");
@@ -191,6 +192,24 @@ public sealed class ActivityRepository(NpgsqlConnectionFactory connectionFactory
                 track?.Sha256,
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
+            cancellationToken: ct));
+
+        if (rowsAffected == 0)
+            return null;
+
+        var equipmentIds = await ListEquipmentIdsAsync(connection, activityId, ct);
+        var row = await connection.QuerySingleOrDefaultAsync<ActivityRow>(new CommandDefinition(
+            GetByIdSql, new { ActivityId = activityId, UserId = userId }, cancellationToken: ct));
+        return row?.ToActivity(equipmentIds);
+    }
+
+    public async Task<Activity?> SetHasElevationAsync(Guid userId, Guid activityId, bool hasElevation, CancellationToken ct)
+    {
+        await using var connection = await connectionFactory.CreateOpenAsync(ct);
+
+        var rowsAffected = await connection.ExecuteAsync(new CommandDefinition(
+            SetHasElevationSql,
+            new { Id = activityId, UserId = userId, HasElevation = hasElevation, UpdatedAt = DateTimeOffset.UtcNow },
             cancellationToken: ct));
 
         if (rowsAffected == 0)

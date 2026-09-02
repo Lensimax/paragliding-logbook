@@ -40,6 +40,7 @@ public sealed record ActivityResponse(
     int? WindDirection,
     int? DurationSeconds,
     TrackReferenceResponse? Track,
+    bool HasElevation,
     IReadOnlyList<Guid> EquipmentIds)
 {
     public static ActivityResponse From(Activity activity) => new(
@@ -49,6 +50,7 @@ public sealed record ActivityResponse(
         activity.MaxAltitudeM, activity.AltitudeGainM, activity.DistanceKm,
         activity.WindSpeedKmh, activity.WindDirection, activity.DurationSeconds,
         activity.Track is not null ? TrackReferenceResponse.From(activity.Track) : null,
+        activity.HasElevation,
         activity.EquipmentIds);
 }
 

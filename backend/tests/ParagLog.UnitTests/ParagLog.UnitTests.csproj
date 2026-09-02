@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ParagLog.Core\ParagLog.Core.csproj" />
+    <ProjectReference Include="..\..\src\ParagLog.Infrastructure\ParagLog.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

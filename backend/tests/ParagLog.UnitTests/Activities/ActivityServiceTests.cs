@@ -279,6 +279,21 @@ public class ActivityServiceTests
                 Track = newTrack,
             });
         }
+
+        public Task<Activity?> SetHasElevationAsync(Guid userId, Guid activityId, bool hasElevation, CancellationToken ct) =>
+            Task.FromResult<Activity?>(new Activity
+            {
+                Id = activityId,
+                UserId = userId,
+                Type = activityType,
+                Name = "Existing",
+                StartedAt = DateTimeOffset.UtcNow,
+                LocalDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Track = track,
+                HasElevation = hasElevation,
+            });
     }
 
     private sealed class FakeBlobStore : IBlobStore
@@ -297,6 +312,12 @@ public class ActivityServiceTests
 
         public Task DeleteTrackAsync(string userPublicId, Guid activityId, TrackFormat format, CancellationToken ct) =>
             Task.CompletedTask;
+
+        public Task SaveElevationAsync(string userPublicId, Guid activityId, Stream content, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public Task<Stream?> OpenElevationAsync(string userPublicId, Guid activityId, CancellationToken ct) =>
+            Task.FromResult<Stream?>(null);
 
         public Task DeleteActivityFolderAsync(string userPublicId, Guid activityId, CancellationToken ct)
         {

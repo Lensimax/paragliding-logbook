@@ -5,6 +5,7 @@ using ParagLog.Core.Abstractions;
 using ParagLog.Core.Activities;
 using ParagLog.Core.Equipment;
 using ParagLog.Core.Users;
+using ParagLog.Infrastructure.Elevation;
 using ParagLog.Infrastructure.Persistence;
 using ParagLog.Infrastructure.Persistence.TypeHandlers;
 using ParagLog.Infrastructure.Security;
@@ -25,6 +26,9 @@ public static class DependencyInjection
         var blobsRoot = configuration["Storage:BlobsRoot"]
             ?? throw new InvalidOperationException("Missing Storage:BlobsRoot configuration.");
 
+        var elevationBaseUrl = configuration["Elevation:BaseUrl"]
+            ?? throw new InvalidOperationException("Missing Elevation:BaseUrl configuration.");
+
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<ActivityType>());
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<TrackFormat>());
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<EquipmentType>());
@@ -38,6 +42,13 @@ public static class DependencyInjection
         services.AddScoped<IEquipmentRepository, EquipmentRepository>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IBlobStore>(new FileSystemBlobStore(blobsRoot));
+
+        services.AddHttpClient<IElevationService, OpenTopoDataClient>(client =>
+        {
+            client.BaseAddress = new Uri(elevationBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddScoped<ElevationResolver>();
 
         services.AddScoped(sp => new UserService(
             sp.GetRequiredService<IUserRepository>(),

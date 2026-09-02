@@ -1,11 +1,13 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach } from 'vitest'
 import { queryClient } from '../app/queryClient'
+import { resetSharedCursorForTests } from '../hooks/useSharedCursor'
 
-// The QueryClient is a module-level singleton shared by every test in a file. Without
-// clearing it, cached data from an earlier test (well within staleTime) leaks into the next.
+// The QueryClient and the shared-cursor store are both module-level singletons shared by every
+// test in a file. Without clearing them, state from an earlier test leaks into the next.
 afterEach(() => {
   queryClient.clear()
+  resetSharedCursorForTests()
 })
 
 // jsdom does not implement matchMedia. Provide a minimal polyfill that evaluates
@@ -65,4 +67,13 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   writable: true,
   configurable: true,
 })
+
+// jsdom does not implement ResizeObserver (uPlot's container auto-resize uses it).
+if (typeof window.ResizeObserver === 'undefined') {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+}
 

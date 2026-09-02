@@ -12,4 +12,6 @@ public interface IActivityRepository
 
     /// <summary>Sets or clears (when <paramref name="track"/> is null) the activity's track reference.</summary>
     Task<Activity?> SetTrackAsync(Guid userId, Guid activityId, TrackReference? track, CancellationToken ct);
+
+    Task<Activity?> SetHasElevationAsync(Guid userId, Guid activityId, bool hasElevation, CancellationToken ct);
 }

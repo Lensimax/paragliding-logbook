@@ -37,6 +37,7 @@ export interface ActivityDetail {
   windDirection: number | null
   durationSeconds: number | null
   track: TrackInfo | null
+  hasElevation: boolean
   equipmentIds: string[]
 }
 

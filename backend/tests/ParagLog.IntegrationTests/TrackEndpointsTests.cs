@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using ParagLog.Core.Abstractions;
 
 namespace ParagLog.IntegrationTests;
 
@@ -21,7 +23,21 @@ public class TrackEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public TrackEndpointsTests(WebApplicationFactory<Program> factory)
     {
         _blobsRoot = Path.Combine(Path.GetTempPath(), "paraglog-test-blobs-" + Guid.NewGuid().ToString("N"));
-        _factory = factory.WithWebHostBuilder(builder => builder.UseSetting("Storage:BlobsRoot", _blobsRoot));
+        _factory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Storage:BlobsRoot", _blobsRoot);
+            // Never hit the real elevation API from tests: slow, rate-limited, and a network
+            // dependency has no place in an automated test run.
+            builder.ConfigureServices(services =>
+                services.AddSingleton<IElevationService>(new FakeElevationService(1234.5)));
+        });
+    }
+
+    private sealed class FakeElevationService(double elevation) : IElevationService
+    {
+        public Task<IReadOnlyList<double?>> GetElevationsAsync(
+            IReadOnlyList<(double Lat, double Lon)> points, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<double?>>(points.Select(_ => (double?)elevation).ToList());
     }
 
     public void Dispose()
@@ -177,5 +193,36 @@ public class TrackEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         Assert.False(Directory.Exists(activityFolder));
+    }
+
+    [Fact]
+    public async Task Upload_resolves_elevation_and_the_elevation_endpoint_serves_it()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var activityId = await CreateActivityAsync(client);
+
+        using var uploadContent = BuildUpload("flight.gpx", SampleGpx);
+        var uploadResponse = await client.PostAsync($"/api/activities/{activityId}/track", uploadContent);
+        uploadResponse.EnsureSuccessStatusCode();
+        var updated = await uploadResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(updated.GetProperty("hasElevation").GetBoolean());
+
+        var elevationResponse = await client.GetAsync($"/api/activities/{activityId}/elevation");
+        elevationResponse.EnsureSuccessStatusCode();
+        var elevationJson = await elevationResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var samples = elevationJson.EnumerateArray().ToList();
+        Assert.Equal(2, samples.Count);
+        Assert.Equal(1234.5, samples[0].GetProperty("elevationM").GetDouble());
+    }
+
+    [Fact]
+    public async Task Elevation_endpoint_returns_404_before_any_track_is_uploaded()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var activityId = await CreateActivityAsync(client);
+
+        var response = await client.GetAsync($"/api/activities/{activityId}/elevation");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
