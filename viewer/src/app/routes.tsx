@@ -7,7 +7,7 @@ import type { PanelView } from '../lib/panel/types'
 export const equipmentListView: PanelView = {
   key: 'equipment-list',
   title: 'Equipment',
-  render: () => <EquipmentList />,
+  render: (nav) => <EquipmentList nav={nav} />,
 }
 
 export const userInfoView: PanelView = {

@@ -1,0 +1,180 @@
+.equipment-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.equipment-list-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.equipment-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.equipment-list-item:hover {
+  background: var(--social-bg);
+}
+
+.equipment-list-item-name {
+  font-weight: 600;
+}
+
+.equipment-list-item-type {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.equipment-list-footer {
+  flex: 0 0 auto;
+  padding-top: 12px;
+}
+
+.equipment-retired-badge {
+  font-weight: 400;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.equipment-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.equipment-detail dl {
+  margin: 16px 0 0;
+}
+
+.equipment-detail dt {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-top: 12px;
+}
+
+.equipment-detail dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.equipment-revisions {
+  margin-top: 16px;
+}
+
+.equipment-revisions ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.usage-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.usage-section dl {
+  display: flex;
+  gap: 24px;
+  margin: 8px 0 0;
+}
+
+.usage-section dt {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.usage-section dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.equipment-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.equipment-auto-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.equipment-revisions-editor {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 0 14px;
+}
+
+.equipment-revisions-editor legend {
+  font-size: 13px;
+  opacity: 0.8;
+  padding: 0 4px;
+}
+
+.equipment-revision-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.equipment-revision-row input[type='date'] {
+  flex: 0 0 auto;
+}
+
+.equipment-revision-row input[type='text'] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.equipment-picker-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.equipment-picker-list li {
+  padding: 4px 0;
+}
+
+.equipment-picker-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.equipment-picker-empty {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.7;
+}

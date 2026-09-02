@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ParagLog.Core.Abstractions;
 using ParagLog.Core.Activities;
+using ParagLog.Core.Equipment;
 using ParagLog.Core.Users;
 using ParagLog.Infrastructure.Persistence;
 using ParagLog.Infrastructure.Persistence.TypeHandlers;
@@ -22,6 +23,7 @@ public static class DependencyInjection
 
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<ActivityType>());
         SqlMapper.AddTypeHandler(new PgEnumTypeHandler<TrackFormat>());
+        SqlMapper.AddTypeHandler(new PgEnumTypeHandler<EquipmentType>());
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
 
         services.AddSingleton(new NpgsqlConnectionFactory(connectionString));
@@ -29,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
+        services.AddScoped<IEquipmentRepository, EquipmentRepository>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
 
         services.AddScoped(sp => new UserService(
@@ -38,6 +41,7 @@ public static class DependencyInjection
             publicIdServerSalt));
 
         services.AddScoped<ActivityService>();
+        services.AddScoped<EquipmentService>();
 
         return services;
     }

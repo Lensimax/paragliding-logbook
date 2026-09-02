@@ -96,6 +96,8 @@ function installFakeBackend() {
         }
       }
 
+      if (url.includes('/api/equipment')) return jsonResponse([])
+
       return jsonResponse({}, 404)
     }),
   )

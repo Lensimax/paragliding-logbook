@@ -7,6 +7,7 @@ import type { PanelNav, PanelView } from '../../../lib/panel/types'
 import { makeActivityEditView } from './ActivityForm'
 import { DeleteActivityDialog } from './DeleteActivityDialog'
 import { useActivity } from '../queries'
+import { useEquipmentList } from '../../equipment/queries'
 import '../activities.css'
 
 interface ActivityDetailProps {
@@ -16,6 +17,7 @@ interface ActivityDetailProps {
 
 export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
   const { data: activity, isLoading, isError } = useActivity(activityId)
+  const { data: equipmentList } = useEquipmentList()
   const [deleting, setDeleting] = useState(false)
 
   if (isLoading) return <p>Loading…</p>
@@ -23,6 +25,10 @@ export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
   if (isError || !activity) {
     return <EmptyState title="Activity not found" description="It may have been deleted." />
   }
+
+  const equipmentNames = activity.equipmentIds
+    .map((id) => equipmentList?.find((item) => item.id === id)?.displayName)
+    .filter((name): name is string => Boolean(name))
 
   return (
     <div className="activity-detail">
@@ -64,7 +70,7 @@ export function ActivityDetail({ activityId, nav }: ActivityDetailProps) {
         <dd>{formatDuration(activity.durationSeconds)}</dd>
 
         <dt>Equipment</dt>
-        <dd>{activity.equipmentIds.length === 0 ? 'None' : activity.equipmentIds.length}</dd>
+        <dd>{activity.equipmentIds.length === 0 ? 'None' : equipmentNames.join(', ') || activity.equipmentIds.length}</dd>
 
         {activity.comment && (
           <>

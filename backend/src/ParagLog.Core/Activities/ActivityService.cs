@@ -3,7 +3,7 @@ using ParagLog.Core.Common;
 
 namespace ParagLog.Core.Activities;
 
-public sealed class ActivityService(IActivityRepository activities)
+public sealed class ActivityService(IActivityRepository activities, IEquipmentRepository equipment)
 {
     private const int DefaultLimit = 50;
     private const int MaxLimit = 100;
@@ -13,6 +13,10 @@ public sealed class ActivityService(IActivityRepository activities)
         var validation = Validate(command.Name, command.StartedAt, command.EndedAt, command.WindSpeedKmh, command.WindDirection);
         if (validation is not null)
             return Result<Activity>.Failure(validation);
+
+        var equipmentError = await ValidateEquipmentOwnershipAsync(userId, command.EquipmentIds, ct);
+        if (equipmentError is not null)
+            return Result<Activity>.Failure(equipmentError);
 
         var created = await activities.CreateAsync(userId, command, ct);
         return Result<Activity>.Success(created);
@@ -24,6 +28,10 @@ public sealed class ActivityService(IActivityRepository activities)
         var validation = Validate(command.Name, command.StartedAt, command.EndedAt, command.WindSpeedKmh, command.WindDirection);
         if (validation is not null)
             return Result<Activity>.Failure(validation);
+
+        var equipmentError = await ValidateEquipmentOwnershipAsync(userId, command.EquipmentIds, ct);
+        if (equipmentError is not null)
+            return Result<Activity>.Failure(equipmentError);
 
         var updated = await activities.UpdateAsync(userId, activityId, command, ct);
         return updated is null
@@ -46,6 +54,19 @@ public sealed class ActivityService(IActivityRepository activities)
     {
         var deleted = await activities.DeleteAsync(userId, activityId, ct);
         return deleted ? Result.Success() : Result.Failure(DomainError.NotFound("Activity not found."));
+    }
+
+    private async Task<DomainError?> ValidateEquipmentOwnershipAsync(
+        Guid userId, IReadOnlyList<Guid> equipmentIds, CancellationToken ct)
+    {
+        if (equipmentIds.Count == 0)
+            return null;
+
+        var distinctIds = equipmentIds.Distinct().ToList();
+        var ownedCount = await equipment.CountOwnedAsync(userId, distinctIds, ct);
+        return ownedCount == distinctIds.Count
+            ? null
+            : DomainError.Validation("One or more selected equipment items don't exist.", "equipmentIds");
     }
 
     private static DomainError? Validate(

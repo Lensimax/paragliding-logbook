@@ -28,6 +28,9 @@ function mockFetch(loggedIn: boolean) {
       if (url.includes('/api/activities')) {
         return jsonResponse(emptyActivityList)
       }
+      if (url.includes('/api/equipment')) {
+        return jsonResponse([])
+      }
       return jsonResponse({}, 404)
     }),
   )

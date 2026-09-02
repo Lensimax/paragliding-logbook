@@ -147,7 +147,7 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
         </>
       )}
 
-      <EquipmentPicker selectedIds={equipmentIds} onChange={setEquipmentIds} />
+      <EquipmentPicker selectedIds={equipmentIds} onChange={setEquipmentIds} autoSelectDefaults={!isEdit} />
 
       <Field label="Comment" htmlFor="activity-comment">
         <textarea id="activity-comment" value={comment} onChange={(e) => setComment(e.target.value)} />
