@@ -15,13 +15,11 @@ export function useAuth() {
   }, [])
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const registered = await authApi.register(payload)
-    setUser({ id: registered.id, username: registered.username })
+    setUser(await authApi.register(payload))
   }, [])
 
   const login = useCallback(async (payload: LoginPayload) => {
-    const loggedIn = await authApi.login(payload)
-    setUser({ id: loggedIn.id, username: loggedIn.username })
+    setUser(await authApi.login(payload))
   }, [])
 
   const logout = useCallback(async () => {

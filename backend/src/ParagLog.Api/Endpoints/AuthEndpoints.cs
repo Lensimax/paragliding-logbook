@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ParagLog.Api.Auth;
 using ParagLog.Api.Common;
 using ParagLog.Api.Contracts.Auth;
+using ParagLog.Core.Abstractions;
 using ParagLog.Core.Users;
 
 namespace ParagLog.Api.Endpoints;
@@ -52,8 +53,11 @@ public static class AuthEndpoints
         return Results.NoContent();
     }
 
-    private static IResult Me(ICurrentUser currentUser) =>
-        Results.Ok(new { id = currentUser.Id, username = currentUser.Username });
+    private static async Task<IResult> Me(ICurrentUser currentUser, IUserRepository users, CancellationToken ct)
+    {
+        var user = await users.FindByIdAsync(currentUser.Id, ct);
+        return user is null ? Results.Unauthorized() : Results.Ok(UserResponse.From(user));
+    }
 
     private static void SetSessionCookie(HttpResponse response, string token, DateTimeOffset expiresAt) =>
         response.Cookies.Append(SessionCookieDefaults.CookieName, token, new CookieOptions

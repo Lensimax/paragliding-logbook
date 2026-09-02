@@ -1,0 +1,57 @@
+.ui-button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--accent-bg, transparent);
+  padding: 8px 14px;
+}
+
+.ui-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ui-button-primary {
+  background: var(--accent);
+  color: var(--accent-bg);
+  border-color: transparent;
+}
+
+.ui-button-icon {
+  border: none;
+  background: none;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ui-button-icon:hover {
+  background: var(--social-bg, rgba(128, 128, 128, 0.15));
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-h, inherit);
+}
+
+.empty-state-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.empty-state-description {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.75;
+}

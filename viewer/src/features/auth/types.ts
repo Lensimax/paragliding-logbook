@@ -1,10 +1,5 @@
 export interface CurrentUser {
   id: string
-  username: string
-}
-
-export interface RegisteredUser {
-  id: string
   publicId: string
   username: string
   email: string

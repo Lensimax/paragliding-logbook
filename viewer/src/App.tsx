@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { activityListRootView } from './app/routes'
+import { AppShell } from './components/layout/AppShell'
+import { AuthProvider, useAuthContext } from './features/auth/AuthContext'
 import { LoginForm } from './features/auth/components/LoginForm'
 import { RegisterForm } from './features/auth/components/RegisterForm'
-import { useAuth } from './features/auth/useAuth'
 import './App.css'
 
-function App() {
-  const { user, loading, register, login, logout } = useAuth()
+function AppContent() {
+  const { user, loading, register, login } = useAuthContext()
   const [mode, setMode] = useState<'login' | 'register'>('login')
 
   if (loading) {
@@ -28,13 +30,14 @@ function App() {
     )
   }
 
+  return <AppShell rootView={activityListRootView} />
+}
+
+function App() {
   return (
-    <section id="center">
-      <h1>Welcome, {user.username}</h1>
-      <button type="button" onClick={() => void logout()}>
-        Log out
-      </button>
-    </section>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
