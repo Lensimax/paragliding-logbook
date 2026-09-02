@@ -9,7 +9,9 @@ public static class MigrationRunner
     {
         var upgrader = DeployChanges.To
             .PostgresqlDatabase(connectionString)
-            .WithScriptsEmbeddedInAssembly(typeof(MigrationRunner).Assembly)
+            .WithScriptsEmbeddedInAssembly(
+                typeof(MigrationRunner).Assembly,
+                name => name.Contains(".Migrations.", StringComparison.Ordinal))
             .LogToConsole()
             .Build();
 

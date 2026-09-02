@@ -1,6 +1,19 @@
+using ParagLog.Api.Auth;
+using ParagLog.Api.Endpoints;
+using ParagLog.Infrastructure;
 using ParagLog.Infrastructure.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser>(sp => CurrentUser.FromHttpContext(sp.GetRequiredService<IHttpContextAccessor>()));
+
+builder.Services
+    .AddAuthentication(SessionCookieDefaults.Scheme)
+    .AddScheme<SessionCookieAuthOptions, SessionCookieAuthHandler>(SessionCookieDefaults.Scheme, _ => { });
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 var connectionString = app.Configuration.GetConnectionString("Default")
@@ -10,7 +23,11 @@ var migrationResult = MigrationRunner.Run(connectionString);
 if (!migrationResult.Successful)
     throw new InvalidOperationException("Database migration failed.", migrationResult.Error);
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapAuthEndpoints();
 
 app.Run();
 

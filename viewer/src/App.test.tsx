@@ -1,10 +1,21 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 describe('App', () => {
-  it('renders without crashing', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the sign-in form when logged out', async () => {
     render(<App />)
-    expect(screen.getByText(/get started/i)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument()
   })
 })
