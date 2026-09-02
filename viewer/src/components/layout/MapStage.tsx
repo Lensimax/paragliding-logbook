@@ -18,31 +18,30 @@ export function MapStage() {
     points && elevationSamples && activity?.hasElevation ? alignGroundElevation(points, elevationSamples) : null
 
   const isTrackLoading = !!activity?.track && points === undefined
-  const hasUsableTrack = !!activity?.track && !!points && points.length > 0 && points[0].time !== null
+  // The map only needs lat/lon, so it renders fine without timestamps. The altitude profile's
+  // x-axis is time-based, so it needs every point to have one (some real-world GPX exports don't).
+  const hasTrack = !!activity?.track && !!points && points.length > 0
+  const hasTimedTrack = hasTrack && points![0].time !== null
 
   let mapContent: ReactNode
   if (!activity) {
     mapContent = <p className="map-stage-placeholder">Select an activity with a track to see it on the map.</p>
   } else if (isTrackLoading) {
     mapContent = <p className="map-stage-placeholder">Loading track…</p>
-  } else if (hasUsableTrack) {
+  } else if (hasTrack) {
     mapContent = <FlightMap points={points!} />
   } else {
-    mapContent = (
-      <p className="map-stage-placeholder">
-        {activity.track ? 'This track has no timestamps to plot.' : 'This activity has no track.'}
-      </p>
-    )
+    mapContent = <p className="map-stage-placeholder">This activity has no track.</p>
   }
 
   return (
     <div className="map-stage">
       <div className="map-stage-map">{mapContent}</div>
       {activity &&
-        (hasUsableTrack ? (
+        (hasTimedTrack ? (
           <AltitudeProfile points={points!} groundElevationM={groundElevationM} />
         ) : (
-          <EmptyProfile message="No track for this activity." />
+          <EmptyProfile message={hasTrack ? 'This track has no timestamps to plot.' : 'No track for this activity.'} />
         ))}
     </div>
   )
