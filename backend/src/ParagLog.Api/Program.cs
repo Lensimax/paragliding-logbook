@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ParagLog.Api.Auth;
 using ParagLog.Api.Endpoints;
 using ParagLog.Infrastructure;
@@ -14,6 +16,9 @@ builder.Services
     .AddScheme<SessionCookieAuthOptions, SessionCookieAuthHandler>(SessionCookieDefaults.Scheme, _ => { });
 builder.Services.AddAuthorization();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+
 var app = builder.Build();
 
 var connectionString = app.Configuration.GetConnectionString("Default")
@@ -28,6 +33,7 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthEndpoints();
+app.MapActivityEndpoints();
 
 app.Run();
 

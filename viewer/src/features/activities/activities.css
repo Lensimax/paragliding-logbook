@@ -1,0 +1,108 @@
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.activity-list-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-list-loading-more {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.activity-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.activity-list-item:hover {
+  background: var(--social-bg);
+}
+
+.activity-list-item-icon {
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+.activity-list-item-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.activity-list-item-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-list-item-meta {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.activity-list-item-duration {
+  flex: 0 0 auto;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.activity-list-footer {
+  flex: 0 0 auto;
+  padding-top: 12px;
+}
+
+.activity-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.activity-detail dl {
+  margin: 16px 0 0;
+}
+
+.activity-detail dt {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-top: 12px;
+}
+
+.activity-detail dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.activity-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.equipment-picker-empty {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}

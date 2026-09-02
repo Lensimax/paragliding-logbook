@@ -6,6 +6,7 @@ export interface PanelStack {
   depth: number
   push: (view: PanelView) => void
   pop: () => void
+  replace: (view: PanelView) => void
 }
 
 /**
@@ -32,5 +33,9 @@ export function usePanelStack(root: PanelView): PanelStack {
     window.history.back()
   }, [])
 
-  return { current: stack[stack.length - 1], depth: stack.length, push, pop }
+  const replace = useCallback((view: PanelView) => {
+    setStack((s) => [...s.slice(0, -1), view])
+  }, [])
+
+  return { current: stack[stack.length - 1], depth: stack.length, push, pop, replace }
 }

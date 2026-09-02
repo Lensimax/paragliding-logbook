@@ -55,3 +55,112 @@
   font-size: 14px;
   opacity: 0.75;
 }
+
+.ui-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  min-width: 140px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-dropdown-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ui-dropdown-menu button:hover {
+  background: var(--social-bg);
+}
+
+.ui-dropdown-menu button.destructive {
+  color: #d33;
+}
+
+.ui-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ui-dialog {
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.ui-dialog-title {
+  margin: 0 0 12px;
+}
+
+.ui-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.ui-field label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.ui-field input,
+.ui-field select,
+.ui-field textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ui-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.field-error {
+  color: #d33;
+  font-size: 13px;
+  margin: 0;
+}

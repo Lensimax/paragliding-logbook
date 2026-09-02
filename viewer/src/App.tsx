@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { activityListRootView } from './app/routes'
+import { AppProviders } from './app/providers'
 import { AppShell } from './components/layout/AppShell'
-import { AuthProvider, useAuthContext } from './features/auth/AuthContext'
+import { useAuthContext } from './features/auth/AuthContext'
 import { LoginForm } from './features/auth/components/LoginForm'
 import { RegisterForm } from './features/auth/components/RegisterForm'
 import './App.css'
@@ -35,9 +36,9 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
+    <AppProviders>
       <AppContent />
-    </AuthProvider>
+    </AppProviders>
   )
 }
 

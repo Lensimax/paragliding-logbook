@@ -10,14 +10,26 @@ const currentUser = {
   email: 'bob@example.com',
 }
 
+const emptyActivityList = { items: [], nextCursor: null }
+
+function jsonResponse(body: unknown, status = 200) {
+  return { ok: status < 400, status, json: async () => body }
+}
+
 function mockFetch(loggedIn: boolean) {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(
-      loggedIn
-        ? { ok: true, status: 200, json: async () => currentUser }
-        : { ok: false, status: 401, json: async () => ({}) },
-    ),
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString()
+
+      if (url.includes('/api/me')) {
+        return loggedIn ? jsonResponse(currentUser) : jsonResponse({}, 401)
+      }
+      if (url.includes('/api/activities')) {
+        return jsonResponse(emptyActivityList)
+      }
+      return jsonResponse({}, 404)
+    }),
   )
 }
 

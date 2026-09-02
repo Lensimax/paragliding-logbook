@@ -9,8 +9,8 @@ interface LogbookPanelProps {
 }
 
 export function LogbookPanel({ stack, rootHeader }: LogbookPanelProps) {
-  const { current, depth, push, pop } = stack
-  const nav = { push, pop }
+  const { current, depth, push, pop, replace } = stack
+  const nav = { push, pop, replace }
   const atRoot = depth === 1
 
   return (
