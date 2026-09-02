@@ -2,6 +2,8 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
+import { toDatetimeLocalValue } from '../../lib/format/datetime'
+import sampleGpx from '../../lib/tracks/fixtures/sample.gpx?raw'
 
 const currentUser = {
   id: 'user-1',
@@ -141,5 +143,44 @@ describe('activity CRUD flow', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
 
     await waitFor(() => expect(screen.getByText(/no activities yet/i)).toBeInTheDocument(), { timeout: 3000 })
+  })
+
+  it('auto-fills name and datetimes from an uploaded GPX file', async () => {
+    installFakeBackend()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await screen.findByText(/no activities yet/i)
+
+    await user.click(screen.getByRole('button', { name: 'Create/import' }))
+    await screen.findByRole('heading', { name: 'Create activity' })
+
+    const file = new File([sampleGpx], 'sample.gpx', { type: 'application/gpx+xml' })
+    await user.upload(screen.getByLabelText('Flight file (GPX or IGC)'), file)
+
+    expect(await screen.findByText(/parsed 10 points/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toHaveValue('sample')
+    // Local-time values, so compare via the same conversion rather than hardcoding a timezone.
+    expect(screen.getByLabelText('Start datetime')).toHaveValue(toDatetimeLocalValue('2026-03-05T09:00:00Z'))
+    expect(screen.getByLabelText('End datetime')).toHaveValue(toDatetimeLocalValue('2026-03-05T09:27:00Z'))
+
+    await user.click(screen.getByRole('button', { name: 'Create' }))
+    expect(await screen.findByRole('heading', { name: 'sample' })).toBeInTheDocument()
+  })
+
+  it('shows a field error for an unparseable flight file', async () => {
+    installFakeBackend()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await screen.findByText(/no activities yet/i)
+
+    await user.click(screen.getByRole('button', { name: 'Create/import' }))
+    await screen.findByRole('heading', { name: 'Create activity' })
+
+    const file = new File(['not a track file'], 'broken.gpx', { type: 'application/gpx+xml' })
+    await user.upload(screen.getByLabelText('Flight file (GPX or IGC)'), file)
+
+    expect(await screen.findByText(/could not parse/i)).toBeInTheDocument()
   })
 })

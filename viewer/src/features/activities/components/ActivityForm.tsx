@@ -1,9 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { Field } from '../../../components/ui/Field'
 import { ApiError } from '../../../lib/api/client'
 import { browserTimeZone, fromDatetimeLocalValue, localDateOf, toDatetimeLocalValue } from '../../../lib/format/datetime'
+import { formatDuration } from '../../../lib/format/duration'
 import type { PanelNav, PanelView } from '../../../lib/panel/types'
+import { parseGpx } from '../../../lib/tracks/parseGpx'
+import { parseIgc } from '../../../lib/tracks/parseIgc'
+import { computeTrackStats } from '../../../lib/tracks/stats'
 import { makeActivityDetailView } from './ActivityDetail'
 import { EquipmentPicker } from './EquipmentPicker'
 import { useCreateActivity, useUpdateActivity } from '../queries'
@@ -31,8 +35,36 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
   const [windDirection, setWindDirection] = useState(activity?.windDirection?.toString() ?? '')
   const [equipmentIds, setEquipmentIds] = useState<string[]>(activity?.equipmentIds ?? [])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [trackError, setTrackError] = useState<string | null>(null)
+  const [trackSummary, setTrackSummary] = useState<string | null>(null)
 
   const submitting = createActivity.isPending || updateActivity.isPending
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setTrackError(null)
+    setTrackSummary(null)
+
+    try {
+      const text = await file.text()
+      const isIgc = file.name.toLowerCase().endsWith('.igc')
+      const track = isIgc ? parseIgc(text) : parseGpx(text)
+      const stats = computeTrackStats(track)
+
+      setName(file.name.replace(/\.(gpx|igc)$/i, ''))
+      setStartedAtLocal(toDatetimeLocalValue(stats.startedAt))
+      setEndedAtLocal(toDatetimeLocalValue(stats.endedAt))
+      setTrackSummary(
+        `Parsed ${track.points.length} points — ${formatDuration(stats.durationSeconds)}, ` +
+          `${stats.distanceKm} km` +
+          (stats.altitudeGainM !== null ? `, ${stats.altitudeGainM} m gain` : ''),
+      )
+    } catch (error) {
+      setTrackError(error instanceof Error ? error.message : 'Could not parse this file.')
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -91,6 +123,18 @@ export function ActivityForm({ nav, activity }: ActivityFormProps) {
           <option value="groundHandling">Ground handling</option>
         </select>
       </Field>
+
+      {!isEdit && (
+        <Field label="Flight file (GPX or IGC)" htmlFor="activity-track-file" error={trackError ?? undefined}>
+          <input
+            id="activity-track-file"
+            type="file"
+            accept=".gpx,.igc"
+            onChange={(e) => void handleFileChange(e)}
+          />
+          {trackSummary && <p className="track-summary">{trackSummary}</p>}
+        </Field>
+      )}
 
       <Field label="Name" htmlFor="activity-name" error={fieldErrors.name?.[0]}>
         <input id="activity-name" value={name} onChange={(e) => setName(e.target.value)} required />

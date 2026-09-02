@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ParagLog test fixture" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Sample flight</name>
+    <trkseg>
+      <trkpt lat="45.8637" lon="6.2911"><ele>1000</ele><time>2026-03-05T09:00:00Z</time></trkpt>
+      <trkpt lat="45.8650" lon="6.2925"><ele>1100</ele><time>2026-03-05T09:03:00Z</time></trkpt>
+      <trkpt lat="45.8663" lon="6.2939"><ele>1200</ele><time>2026-03-05T09:06:00Z</time></trkpt>
+      <trkpt lat="45.8676" lon="6.2953"><ele>1300</ele><time>2026-03-05T09:09:00Z</time></trkpt>
+      <trkpt lat="45.8689" lon="6.2967"><ele>1400</ele><time>2026-03-05T09:12:00Z</time></trkpt>
+      <trkpt lat="45.8702" lon="6.2981"><ele>1500</ele><time>2026-03-05T09:15:00Z</time></trkpt>
+      <trkpt lat="45.8650" lon="6.2930"><ele>1300</ele><time>2026-03-05T09:18:00Z</time></trkpt>
+      <trkpt lat="45.8600" lon="6.2880"><ele>1100</ele><time>2026-03-05T09:21:00Z</time></trkpt>
+      <trkpt lat="45.8550" lon="6.2830"><ele>900</ele><time>2026-03-05T09:24:00Z</time></trkpt>
+      <trkpt lat="45.8500" lon="6.2780"><ele>700</ele><time>2026-03-05T09:27:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
