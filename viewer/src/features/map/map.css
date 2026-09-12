@@ -1,4 +1,9 @@
 .flight-map {
   width: 100%;
   height: 100%;
+  /* Leaflet's internal panes/controls use z-index up to 1000 with no stacking context of their
+     own, so without this they'd compete directly against page-level UI (dialogs, dropdowns)
+     instead of staying contained under the map. */
+  position: relative;
+  z-index: 0;
 }

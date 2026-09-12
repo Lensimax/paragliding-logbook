@@ -65,7 +65,9 @@
   position: absolute;
   top: 100%;
   right: 0;
-  z-index: 10;
+  /* Leaflet's own panes/controls go up to z-index 1000 and .flight-map doesn't establish its
+     own stacking context, so anything meant to float above the map has to clear that. */
+  z-index: 1100;
   min-width: 140px;
   margin-top: 4px;
   padding: 4px;
@@ -101,7 +103,8 @@
 .ui-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  /* Same Leaflet z-index issue as .ui-dropdown-menu above - must clear the map's controls (1000). */
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;

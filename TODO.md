@@ -12,3 +12,7 @@ Tracks the steps in `plans/ARCHITECTURE.md` § Development milestones. Check a s
 - [x] **Step 8 — Track upload and map.** Blob store, upload and download endpoints, delete ordering, `FlightMap` with base layers and track rendering, fit-to-bounds. → tag `v0.4.0`
 - [x] **Step 9 — Altitude profile.** uPlot integration, shared cursor with the map, empty-profile variant, elevation service and `elevation.json` caching. → tag `v0.5.0`
 - [x] **Step 10 — Export and hardening.** Streamed ZIP export, orphan sweeper, rate limiting on auth endpoints, structured logging, health checks, Caddy config. → tag `v1.0.0`
+
+# Issues
+
+- [x] fix the delete popup that does not show. It prevent the user to remove an activity
