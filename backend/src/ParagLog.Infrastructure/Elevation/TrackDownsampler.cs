@@ -10,7 +10,11 @@ namespace ParagLog.Infrastructure.Elevation;
 /// </summary>
 public static class TrackDownsampler
 {
-    private const int TargetPointCount = 400; // spec: 300-500
+    // Below the spec's original 300-500: the viewer now linearly interpolates ground elevation
+    // between samples (alignElevation.ts) instead of snapping to the nearest one, so a sparser
+    // set still renders as a smooth line - and it halves the OpenTopoData batches per upload
+    // (100/batch), which is both faster and less likely to hit the public instance's rate limit.
+    private const int TargetPointCount = 150;
 
     public static IReadOnlyList<(double Lat, double Lon)> Downsample(string content, TrackFormat format)
     {

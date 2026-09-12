@@ -3,10 +3,13 @@ import uPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { useSharedCursor } from '../../hooks/useSharedCursor'
 import { formatDateTime } from '../../lib/format/datetime'
+import { movingAverage } from '../../lib/tracks/smoothing'
 import { cumulativeDistanceKm } from '../../lib/tracks/stats'
 import { ALTITUDE_COLOR, GROUND_COLOR, buildProfileOptions, formatClockTime, formatDistanceKm } from './profileOptions'
 import type { TrackPoint } from '../../lib/tracks/types'
 import './profile.css'
+
+const ALTITUDE_SMOOTHING_WINDOW = 5
 
 interface AltitudeProfileProps {
   points: TrackPoint[]
@@ -27,7 +30,9 @@ export function AltitudeProfile({ points, groundElevationM, height }: AltitudePr
 
   const startMs = hasTime ? new Date(points[0].time!).getTime() : 0
   const xValues = hasTime ? points.map((p) => (new Date(p.time!).getTime() - startMs) / 1000) : cumulativeDistanceKm(points)
-  const altitudes = points.map((p) => p.baroElevation ?? NaN)
+  // Raw GPS/baro altitude is jittery point-to-point; smooth it for display only - stats.ts
+  // computes max altitude and altitude gain from the unsmoothed track.
+  const altitudes = movingAverage(points.map((p) => p.baroElevation ?? NaN), ALTITUDE_SMOOTHING_WINDOW)
 
   useEffect(() => {
     const container = containerRef.current

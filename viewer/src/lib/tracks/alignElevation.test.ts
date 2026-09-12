@@ -7,14 +7,28 @@ function point(lat: number, lon: number): TrackPoint {
 }
 
 describe('alignGroundElevation', () => {
-  it('matches each point to its nearest elevation sample', () => {
+  it('maps each point onto the sample at the same fraction of the track', () => {
     const points = [point(0, 0), point(10, 10)]
     const samples = [
-      { lat: 0.1, lon: 0.1, elevationM: 100 },
-      { lat: 9.9, lon: 9.9, elevationM: 900 },
+      { lat: 0, lon: 0, elevationM: 100 },
+      { lat: 10, lon: 10, elevationM: 900 },
     ]
 
     expect(alignGroundElevation(points, samples)).toEqual([100, 900])
+  })
+
+  it('linearly interpolates between the two bracketing samples', () => {
+    // 5 points span the same range as 3 samples one-to-one at indices 0, 2, 4 -> fractions
+    // 0, 0.5, 1 map onto sample fractions 0, 1, 2, i.e. sample indices 0, 1, 2 exactly, while
+    // the in-between points (indices 1 and 3) fall halfway between two samples.
+    const points = [point(0, 0), point(0, 0), point(0, 0), point(0, 0), point(0, 0)]
+    const samples = [
+      { lat: 0, lon: 0, elevationM: 100 },
+      { lat: 0, lon: 0, elevationM: 200 },
+      { lat: 0, lon: 0, elevationM: 400 },
+    ]
+
+    expect(alignGroundElevation(points, samples)).toEqual([100, 150, 200, 300, 400])
   })
 
   it('returns all-null when there are no samples', () => {
@@ -23,17 +37,27 @@ describe('alignGroundElevation', () => {
     expect(alignGroundElevation(points, [])).toEqual([null, null])
   })
 
-  it('passes through a null elevation from an unresolved sample', () => {
+  it('returns null for a single, unresolved sample', () => {
     const points = [point(0, 0)]
     const samples = [{ lat: 0, lon: 0, elevationM: null }]
 
     expect(alignGroundElevation(points, samples)).toEqual([null])
   })
 
-  it('keeps matching chronologically even when the track loops back near an earlier position', () => {
-    // A landing pattern that circles back close to takeoff: point 3 sits right next to point 0,
-    // but should still resolve to the late-flight sample (400), not snap back to the early one
-    // (100), which is what a plain "nearest across the whole samples array" search would do.
+  it('falls back to the non-null neighbor when one bracketing sample is unresolved', () => {
+    const points = [point(0, 0), point(0, 0), point(0, 0)]
+    const samples = [
+      { lat: 0, lon: 0, elevationM: 100 },
+      { lat: 0, lon: 0, elevationM: null },
+      { lat: 0, lon: 0, elevationM: 300 },
+    ]
+
+    expect(alignGroundElevation(points, samples)).toEqual([100, null, 300])
+  })
+
+  it('stays chronologically aligned when the track loops back near an earlier position', () => {
+    // A landing pattern circling back close to takeoff no longer matters - alignment is purely
+    // by index fraction now, so the geographic proximity of point 3 to point 0 is irrelevant.
     const points = [point(0, 0), point(1, 0), point(2, 0), point(0.05, 0.05)]
     const samples = [
       { lat: 0, lon: 0, elevationM: 100 },
