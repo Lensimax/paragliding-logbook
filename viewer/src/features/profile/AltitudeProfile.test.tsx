@@ -11,7 +11,7 @@ const points: TrackPoint[] = [
 
 describe('AltitudeProfile', () => {
   it('mounts a uPlot chart without a ground series', () => {
-    const { container, unmount } = render(<AltitudeProfile points={points} groundElevationM={null} />)
+    const { container, unmount } = render(<AltitudeProfile points={points} groundElevationM={null} height={140} />)
 
     expect(container.querySelector('canvas')).not.toBeNull()
 
@@ -19,7 +19,9 @@ describe('AltitudeProfile', () => {
   })
 
   it('mounts with a ground elevation series', () => {
-    const { container, unmount } = render(<AltitudeProfile points={points} groundElevationM={[990, 1010, 1050]} />)
+    const { container, unmount } = render(
+      <AltitudeProfile points={points} groundElevationM={[990, 1010, 1050]} height={140} />,
+    )
 
     expect(container.querySelector('canvas')).not.toBeNull()
 
@@ -27,7 +29,7 @@ describe('AltitudeProfile', () => {
   })
 
   it('shows no readout before any cursor position is set', () => {
-    const { container, unmount } = render(<AltitudeProfile points={points} groundElevationM={null} />)
+    const { container, unmount } = render(<AltitudeProfile points={points} groundElevationM={null} height={140} />)
 
     expect(container.querySelector('.altitude-profile-readout')).toBeNull()
 
@@ -36,7 +38,9 @@ describe('AltitudeProfile', () => {
 
   it('falls back to a distance-based x-axis when the track has no timestamps', () => {
     const untimedPoints: TrackPoint[] = points.map((p) => ({ ...p, time: null }))
-    const { container, unmount } = render(<AltitudeProfile points={untimedPoints} groundElevationM={null} />)
+    const { container, unmount } = render(
+      <AltitudeProfile points={untimedPoints} groundElevationM={null} height={140} />,
+    )
 
     expect(container.querySelector('canvas')).not.toBeNull()
 

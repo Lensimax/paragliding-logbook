@@ -7,9 +7,12 @@ import { useElevationSamples } from '../../features/activities/useElevation'
 import { useSelectedActivity } from '../../features/activities/useSelectedActivity'
 import { useTrack } from '../../features/activities/useTrack'
 import { alignGroundElevation } from '../../lib/tracks/alignElevation'
+import { PanelResizer } from './PanelResizer'
+import { useProfileHeight } from './useProfileHeight'
 
 export function MapStage() {
   const { selectedActivityId } = useSelectedActivity()
+  const { height: profileHeight, setHeight: setProfileHeight } = useProfileHeight()
   const { data: activity } = useActivity(selectedActivityId ?? undefined)
   const { data: points } = useTrack(activity?.id, activity?.track?.format)
   const { data: elevationSamples } = useElevationSamples(activity?.id, activity?.hasElevation)
@@ -36,12 +39,21 @@ export function MapStage() {
   return (
     <div className="map-stage">
       <div className="map-stage-map">{mapContent}</div>
-      {activity &&
-        (hasTrack ? (
-          <AltitudeProfile points={points!} groundElevationM={groundElevationM} />
-        ) : (
-          <EmptyProfile message="No track for this activity." />
-        ))}
+      {activity && (
+        <>
+          <PanelResizer
+            size={profileHeight}
+            onResize={setProfileHeight}
+            orientation="horizontal"
+            label="Resize altitude profile"
+          />
+          {hasTrack ? (
+            <AltitudeProfile points={points!} groundElevationM={groundElevationM} height={profileHeight} />
+          ) : (
+            <EmptyProfile message="No track for this activity." height={profileHeight} />
+          )}
+        </>
+      )}
     </div>
   )
 }

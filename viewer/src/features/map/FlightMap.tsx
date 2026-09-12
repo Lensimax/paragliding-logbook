@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useSharedCursor } from '../../hooks/useSharedCursor'
@@ -89,7 +89,11 @@ export function FlightMap({ points }: FlightMapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, timeOffsetSeconds, points])
 
-  useFitBounds(map, points.length > 0 ? trackBounds(points) : null)
+  // Recomputed only when the track itself changes, not on every hover-driven re-render (the
+  // shared cursor store forces a re-render on each hover tick), otherwise the map would
+  // re-fit/recenter every time the mouse moves over the altitude profile.
+  const bounds = useMemo(() => (points.length > 0 ? trackBounds(points) : null), [points])
+  useFitBounds(map, bounds)
 
   return <div ref={containerRef} className="flight-map" />
 }

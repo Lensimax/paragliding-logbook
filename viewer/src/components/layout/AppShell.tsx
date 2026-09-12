@@ -66,7 +66,7 @@ export function AppShell({ rootView }: AppShellProps) {
         <div className="app-shell app-shell-desktop">
           <MapStage />
           <div className="logbook-panel-wrapper" style={{ width }}>
-            <PanelResizer width={width} onResize={setWidth} />
+            <PanelResizer size={width} onResize={setWidth} orientation="vertical" label="Resize logbook panel" />
             {panel}
           </div>
         </div>
