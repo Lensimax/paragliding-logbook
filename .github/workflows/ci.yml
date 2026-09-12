@@ -68,3 +68,51 @@ jobs:
       - name: Test
         run: npm run test
         working-directory: viewer
+
+  # Publishes backend and viewer images to GHCR on every push to dev - never on pull_request,
+  # since forked-repo PRs don't get package-write permission on GITHUB_TOKEN.
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [backend, viewer]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: backend
+            context: backend
+            dockerfile: backend/src/ParagLog.Api/Dockerfile
+          - image: viewer
+            context: viewer
+            dockerfile: viewer/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute image name
+        id: image
+        # GHCR image names must be lowercase; github.repository can carry uppercase (e.g. an
+        # uppercase letter in the owner name).
+        run: echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.image }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ steps.image.outputs.repo }}-${{ matrix.image }}:dev
+            ghcr.io/${{ steps.image.outputs.repo }}-${{ matrix.image }}:${{ steps.version.outputs.value }}-dev
