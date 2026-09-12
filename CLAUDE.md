@@ -40,6 +40,7 @@ export ConnectionStrings__Default="Host=localhost;Port=5434;Database=paraglog;Us
 
 ## Rules
 
+- **Never run `git commit` unless the user explicitly asks for it in that turn.** Make and verify changes, then stop and let the user ask.
 - **Layering**: `Core` has no dependency on Postgres/filesystem (no `Npgsql`, no file I/O in `Core`). `Infrastructure` implements `Core` interfaces. `Api` wires DI and exposes HTTP only — no SQL or business logic in endpoint methods.
 - **Every repository method takes `userId`** and puts it in the `WHERE` clause — authorization is per-query, not a separate check.
 - Track files (`.gpx`/`.igc`) are never stored in Postgres — only metadata and a filesystem path.
