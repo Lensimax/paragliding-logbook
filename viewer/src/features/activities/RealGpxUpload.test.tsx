@@ -149,5 +149,10 @@ describe('uploading a real-world GPX export with no timestamps', () => {
     // The profile falls back to a distance-based x-axis instead of an empty state.
     await waitFor(() => expect(document.querySelector('.altitude-profile-chart canvas')).not.toBeNull())
     expect(document.querySelector('.altitude-profile-empty')).toBeNull()
+
+    // Let Leaflet's rAF-scheduled canvas redraw complete before testing-library's implicit
+    // cleanup unmounts the tree, otherwise it fires against an already-removed canvas and
+    // throws (see the same wait in FlightMap.test.tsx).
+    await new Promise((resolve) => requestAnimationFrame(resolve))
   })
 })
