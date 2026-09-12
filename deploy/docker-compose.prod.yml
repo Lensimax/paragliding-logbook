@@ -1,0 +1,75 @@
+# Production deployment: standalone (not an overlay on docker-compose.yml, which builds
+# backend/viewer locally for dev) - pulls the backend/viewer images from GitHub Packages (GHCR)
+# instead.
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Requires a .env file next to this one (see .env.example) with real secrets - there are no
+# dev-mode defaults here, on purpose.
+#
+# If the GHCR packages are private, authenticate before pulling:
+#   echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-username> --password-stdin
+# (a classic PAT or fine-grained token with read:packages is enough - no push scope needed here)
+#
+# CI currently only publishes on pushes to dev (see .github/workflows/ci.yml), tagged "dev" and
+# "X.X.X-dev" - so IMAGE_TAG below defaults to "dev". Point it at a real release tag once the
+# workflow also publishes on main/tags.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: paraglog
+      POSTGRES_USER: paraglog
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - paraglog-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paraglog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/${GHCR_REPO:-lensimax/paragliding-logbook}-backend:${IMAGE_TAG:-dev}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=db;Database=paraglog;Username=paraglog;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
+      Accounts__PublicIdServerSalt: ${ACCOUNTS_PUBLIC_ID_SERVER_SALT:?set ACCOUNTS_PUBLIC_ID_SERVER_SALT in .env}
+      Storage__BlobsRoot: "/data/blobs"
+    volumes:
+      - paraglog-blobs:/data/blobs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # No published ports: only the proxy is reachable from outside the compose network.
+
+  viewer:
+    image: ghcr.io/${GHCR_REPO:-lensimax/paragliding-logbook}-viewer:${IMAGE_TAG:-dev}
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:alpine
+    depends_on:
+      backend:
+        condition: service_healthy
+      viewer:
+        condition: service_started
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    # Caddyfile currently serves plain :80 (same as dev). For real TLS, point it at a domain
+    # (e.g. "example.com { ... }") and publish 443 too - Caddy issues/renews the cert on its own.
+
+volumes:
+  paraglog-pgdata:
+  paraglog-blobs:
